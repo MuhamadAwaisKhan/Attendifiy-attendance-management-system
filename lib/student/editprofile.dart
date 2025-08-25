@@ -1,12 +1,13 @@
 import 'dart:io';
 
+import 'package:attendencesystem/UIHelper/customwidgets.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-
-import 'package:google_fonts/google_fonts.dart';import 'package:image_picker/image_picker.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:image_picker/image_picker.dart';
 
 class EditProfile extends StatefulWidget {
   const EditProfile({Key? key}) : super(key: key);
@@ -33,7 +34,7 @@ class _EditProfileState extends State<EditProfile> {
 
   Future<void> _loadUserData() async {
     final user = _auth.currentUser;
-    if (user == null) return; // ✅ Check if user is logged in
+    if (user == null) return;
 
     final uid = user.uid;
     final doc = await _firestore.collection('users').doc(uid).get();
@@ -43,7 +44,7 @@ class _EditProfileState extends State<EditProfile> {
       setState(() {
         _nameController.text = data['name'] ?? '';
         _regController.text = data['regno'] ?? '';
-        _profilePicUrl = data['profileImage'] ?? '';
+        _profilePicUrl = data['profileImage'];
       });
     }
   }
@@ -52,9 +53,7 @@ class _EditProfileState extends State<EditProfile> {
     setState(() => _loading = true);
     final user = _auth.currentUser;
     if (user == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("User not logged in")),
-      );
+      UIHelper.customalertbox(context, "User not logged in");
       setState(() => _loading = false);
       return;
     }
@@ -73,16 +72,12 @@ class _EditProfileState extends State<EditProfile> {
       await _firestore.collection("users").doc(uid).update({
         "name": _nameController.text.trim(),
         "regno": _regController.text.trim(),
-        "profileImage": imageUrl ?? '', // ✅ Safe update
+        "profileImage": imageUrl ?? '',
       });
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Profile updated successfully")),
-      );
+      UIHelper.customalertbox(context, "Profile Updated Successfully");
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Error updating profile: $e")),
-      );
+      UIHelper.customalertbox(context, " Error updating profile: $e");
     }
 
     setState(() => _loading = false);
@@ -91,27 +86,25 @@ class _EditProfileState extends State<EditProfile> {
   pickimage(ImageSource imagesource) async {
     try {
       final photo = await ImagePicker().pickImage(source: imagesource);
-      if (photo == null) {
-        return null;
-      }
+      if (photo == null) return;
+
       final tempimage = File(photo.path);
-
-    setState(() {
-      pickedimage = tempimage;
-
-    });
+      setState(() {
+        pickedimage = tempimage;
+      });
     } catch (e) {
       print(e.toString());
     }
   }
+
   showoptionbox(BuildContext context) {
     showDialog(
-      context: context, // ✅ you must provide context here
+      context: context,
       builder: (BuildContext context) {
         return AlertDialog(
           title: const Text("Pick image from"),
           content: Column(
-            mainAxisSize: MainAxisSize.min, // 👈 shrink to fit
+            mainAxisSize: MainAxisSize.min,
             children: [
               ListTile(
                 leading: const Icon(CupertinoIcons.camera),
@@ -135,12 +128,20 @@ class _EditProfileState extends State<EditProfile> {
       },
     );
   }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text("Edit Profile",
-            style: GoogleFonts.poppins(color: Colors.white)),
+        title: Text(
+          "Edit Profile",
+          style: GoogleFonts.poppins(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+            fontSize: 18,
+          ),
+        ),
+        centerTitle: true,
         backgroundColor: Colors.blue,
       ),
       body: Padding(
@@ -148,40 +149,104 @@ class _EditProfileState extends State<EditProfile> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            InkWell(
-              onTap: () {
-                showoptionbox(context);
-              },
-              child: NetworkImage(_profilePicUrl!) != null
-                  ? CircleAvatar(
-                radius: 80,
-                backgroundImage: NetworkImage(_profilePicUrl!),
-              )
-                  : CircleAvatar(
-                backgroundColor: Colors.blue,
-                radius: 80,
-                child: Icon(
-                  color: Colors.white,
-                  CupertinoIcons.person,
-                  size: 60,
-                ),
+            Center(
+              child: InkWell(
+                onTap: () {
+                  showoptionbox(context);
+                },
+                child: _profilePicUrl != null && _profilePicUrl!.isNotEmpty
+                    ? Container(
+                      child: Center(
+                        child: Stack(
+                          children: [
+                            // Main Avatar
+                            InkWell(
+                              onTap: () {
+                                showoptionbox(context);
+                              },
+                              child: pickedimage != null
+                                  ? CircleAvatar(
+                                radius: 80,
+                                backgroundImage: FileImage(pickedimage!),
+                              )
+                                  : _profilePicUrl != null && _profilePicUrl!.isNotEmpty
+                                  ? CircleAvatar(
+                                radius: 80,
+                                backgroundImage: NetworkImage(_profilePicUrl!),
+                              )
+                                  : CircleAvatar(
+                                backgroundColor: Colors.blue,
+                                radius: 80,
+                                child: Icon(
+                                  color: Colors.white,
+                                  CupertinoIcons.person,
+                                  size: 60,
+                                ),
+                              ),
+                            ),
+
+                            // Camera Icon Overlay
+                            Positioned(
+                              bottom: 5,
+                              right: 5,
+                              child: GestureDetector(
+                                onTap: () {
+                                  showoptionbox(context);
+                                },
+                                child: Container(
+                                  padding: EdgeInsets.all(8),
+                                  decoration: BoxDecoration(
+                                    color: Colors.blue.withOpacity(0.8),
+                                    shape: BoxShape.circle,
+                                    border: Border.all(color: Colors.white, width: 2),
+                                  ),
+                                  child: Icon(
+                                    Icons.camera_alt,
+                                    color: Colors.white,
+                                    size: 20,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    )
+                    : Container(
+                      child: Center(
+                        child: Stack(
+                          children:[ CircleAvatar(
+                              backgroundColor: Colors.blue,
+                              radius: 80,
+                              child: Icon(
+                                color: Colors.white,
+                                CupertinoIcons.person,
+                                size: 60,
+                              ),
+                            ),
+
+                        ]
+                        ),
+                      ),
+                    ),
               ),
             ),
-            TextField(
-              controller: _nameController,
-              decoration: InputDecoration(labelText: 'Name'),
-            ),
-            SizedBox(height: 10),
-           TextField(
-              controller: _regController,
-              decoration: InputDecoration(labelText: 'Registration Number'),
-            ),
             SizedBox(height: 20),
-            _loading
-                ? Center(child: CircularProgressIndicator())
-                : ElevatedButton(
+            UIHelper.customTextField(
+              controller: _nameController,
+              label: "Name",
+            ),
+
+            UIHelper.customTextField(
+              controller: _regController,
+              label: "Registration Number",
+            ),
+
+            UIHelper.customButton(
               onPressed: _updateProfile,
-              child: Text('Save Changes'),
+              text: 'Update Profile',
+              width: 280,
+              isLoading: _loading,
             ),
           ],
         ),

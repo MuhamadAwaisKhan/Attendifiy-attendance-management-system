@@ -55,15 +55,38 @@ class _SignupScreenState extends State<SignupScreen> {
                     radius: 80,
                     backgroundImage: FileImage( context.watch<AuthProvider>().pickedimage!),
                   )
-                      : CircleAvatar(
-                    backgroundColor: Colors.blue,
-                    radius: 80,
-                    child: Icon(
-                      color: Colors.white,
-                      CupertinoIcons.person,
-                      size: 60,
-                    ),
-                  ),
+                      : Stack(
+                        children:[ CircleAvatar(
+                                            backgroundColor: Colors.blue,
+                                            radius: 80,
+                                            child: Icon(
+                        color: Colors.white,
+                        CupertinoIcons.person,
+                        size: 60,
+                                            ),
+                                          ),
+                          Positioned(
+                            bottom: 5,
+                            right: 5,
+                            child: GestureDetector(
+                              onTap: () {
+                                context.read<AuthProvider>().showoptionbox(context);                              },
+                              child: Container(
+                                padding: EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: Colors.blue.withOpacity(0.8),
+                                  shape: BoxShape.circle,
+                                  border: Border.all(color: Colors.white, width: 2),
+                                ),
+                                child: Icon(
+                                  Icons.camera_alt,
+                                  color: Colors.white,
+                                  size: 20,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ]),
                 ),
                 UIHelper.customTextField(
                   controller: _nameController,

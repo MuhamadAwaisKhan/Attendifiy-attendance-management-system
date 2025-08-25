@@ -2,7 +2,7 @@
 import 'dart:io';
 
 import 'package:attendencesystem/UIHelper/customwidgets.dart';
-import 'package:attendencesystem/admindashboard.dart';
+import 'package:attendencesystem/admin/admindashboard.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
@@ -51,6 +51,25 @@ class AuthProvider with ChangeNotifier {
       );
       return;
     }
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) {
+        return Center(
+          child: Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(15),
+            ),
+            child: const CircularProgressIndicator(
+              strokeWidth: 3,
+              color: Colors.blue,
+            ),
+          ),
+        );
+      },
+    );
 
     try {
       // Create user in Firebase Auth
@@ -262,6 +281,11 @@ class AuthProvider with ChangeNotifier {
 
   Future<void> logout(BuildContext context) async {
     await _auth.signOut();
-    Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => LoginScreen()));
+     notifyListeners();
+  }
+  Future<void> logoutforadmin(BuildContext context) async {
+    await _auth.signOut();
+      Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => LoginScreen()));
+     notifyListeners();
   }
 }

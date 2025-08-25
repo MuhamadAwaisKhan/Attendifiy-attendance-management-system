@@ -14,13 +14,13 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  final _emailController = TextEditingController(text: 'anas@gmail.com');
+  final _emailController = TextEditingController(text: 'awais@admin.com');
   final _passwordController = TextEditingController(text: '123456');
   final formkey = GlobalKey<FormState>();
-void clearcontroller(){
-  _emailController.clear();
-  _passwordController.clear();
-}
+// void clearcontroller(){
+//   _emailController.clear();
+//   _passwordController.clear();
+// }
   @override
   Widget build(BuildContext context) {
     return Scaffold(

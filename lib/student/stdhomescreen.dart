@@ -1,4 +1,5 @@
 import 'package:attendencesystem/UIHelper/customwidgets.dart';
+import 'package:attendencesystem/student/leaveuserscreen.dart';
 import 'package:attendencesystem/student/viewattendence.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -6,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 
+import '../service/studentnotificationlistener.dart';
 import 'editprofile.dart';
 
 class StudentDashboard extends StatefulWidget {
@@ -20,7 +22,6 @@ class _StudentDashboardState extends State<StudentDashboard> {
   String selectedRole = "";
   final formattedDate = "21-08-2025";
 
-
   /// ✅ Show Attendance Options
   Future showOptionBox(BuildContext context) {
     return showDialog(
@@ -29,21 +30,27 @@ class _StudentDashboardState extends State<StudentDashboard> {
         return StatefulBuilder(
           builder: (context, setState) {
             return AlertDialog(
-              title: Text("Take Attendance", style: GoogleFonts.poppins(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: Colors.blue,
-              ),),
+              title: Text(
+                "Take Attendance",
+                style: GoogleFonts.poppins(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.blue,
+                ),
+              ),
               content: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Card(
                     child: ListTile(
-                      title:  Text("Present ✅", style: GoogleFonts.poppins(
-                        fontSize: 15,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.blue,
-                      )),
+                      title: Text(
+                        "Present ✅",
+                        style: GoogleFonts.poppins(
+                          fontSize: 15,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.blue,
+                        ),
+                      ),
                       leading: Radio<String>(
                         activeColor: Colors.green,
                         fillColor: MaterialStateProperty.all(Colors.green),
@@ -59,11 +66,14 @@ class _StudentDashboardState extends State<StudentDashboard> {
                   ),
                   Card(
                     child: ListTile(
-                      title: Text("Absent ❌",style: GoogleFonts.poppins(
-                        fontSize: 15,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.blue,
-                      )),
+                      title: Text(
+                        "Absent ❌",
+                        style: GoogleFonts.poppins(
+                          fontSize: 15,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.blue,
+                        ),
+                      ),
                       leading: Radio<String>(
                         activeColor: Colors.red,
                         fillColor: MaterialStateProperty.all(Colors.red),
@@ -82,25 +92,27 @@ class _StudentDashboardState extends State<StudentDashboard> {
               ),
               actions: [
                 TextButton(
-                  style: TextButton.styleFrom(
-                    backgroundColor: Colors.blue,
-                  ),
+                  style: TextButton.styleFrom(backgroundColor: Colors.blue),
                   onPressed: () => Navigator.pop(context),
-                  child:  Text("Cancel",style: GoogleFonts.poppins(
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                  ),),
+                  child: Text(
+                    "Cancel",
+                    style: GoogleFonts.poppins(
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
                 ),
                 const SizedBox(width: 20),
                 TextButton(
-                  style: TextButton.styleFrom(
-                    backgroundColor: Colors.blue,
-                  ),
+                  style: TextButton.styleFrom(backgroundColor: Colors.blue),
                   onPressed: () => Navigator.pop(context, selectedRole),
-                  child:  Text("OK",style: GoogleFonts.poppins(
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                  ),),
+                  child: Text(
+                    "OK",
+                    style: GoogleFonts.poppins(
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
                 ),
               ],
             );
@@ -109,6 +121,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
       },
     );
   }
+
   Future<void> addDummyAttendanceData() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
@@ -138,16 +151,14 @@ class _StudentDashboardState extends State<StudentDashboard> {
     final firestore = FirebaseFirestore.instance;
     final uid = _auth.currentUser!.uid;
     final today = DateTime.now();
-    final date=DateFormat('dd-MM-yyyy').format(today);
+    final date = DateFormat('dd-MM-yyyy').format(today);
 
     try {
-      final markRef = await firestore.collection('attendance')
+      final markRef = await firestore
+          .collection('attendance')
           .where('userId', isEqualTo: uid)
           .where('date', isEqualTo: date)
           .get();
-
-
-
 
       if (markRef.docs.isNotEmpty) {
         // 👇 Already marked, don't show dialog
@@ -189,69 +200,87 @@ class _StudentDashboardState extends State<StudentDashboard> {
         ),
         centerTitle: true,
         backgroundColor: Colors.blue,
-        leading: const SizedBox(),
+        leading:  SizedBox(),
       ),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            UIHelper.customButton(
-              onPressed: () async {
-                await markAttendance(context);
-              },
-              width: 240,
-              icon: Icons.check_circle,
-              text: "Mark Attendance",
-            ),
-            const SizedBox(height: 20),
-            UIHelper.customButton(
-              onPressed: () {
-                addDummyAttendanceData();
+      body: Stack(
+        children:[
+          // StudentNotificationListener(), // 👈 This listens for notifications
 
-              },
-              width: 240,
-              icon: Icons.leave_bags_at_home,
-              text: "Dummy attendence",
+          Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                UIHelper.customButton(
+                  onPressed: () async {
+                    await markAttendance(context);
+                  },
+                  width: 240,
+                  icon: Icons.check_circle,
+                  text: "Mark Attendance",
+                ),
+                SizedBox(height: 20),
+                UIHelper.customButton(
+                  onPressed: () {
+                    addDummyAttendanceData();
+                  },
+                  width: 240,
+                  icon: Icons.leave_bags_at_home,
+                  text: "Dummy attendence",
+                ),
+                SizedBox(height: 20),
+                UIHelper.customButton(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) =>
+                            MarkLeaveScreen(userId: _auth.currentUser!.uid),
+                      ),
+                    );
+                  },
+                  width: 240,
+                  icon: Icons.leave_bags_at_home,
+                  text: "Mark Leave",
+                ),
+                SizedBox(height: 20),
+                UIHelper.customButton(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => ViewAttendance()),
+                    );
+                  },
+                  width: 240,
+                  icon: Icons.history,
+                  text: "View Attendance",
+                ),
+                SizedBox(height: 20),
+                UIHelper.customButton(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => EditProfile()),
+                    );
+                  },
+                  width: 240,
+                  icon: Icons.person,
+                  text: "Edit Profile",
+                ),
+                SizedBox(height: 20),
+                UIHelper.customButton(
+                  onPressed: () async {
+                    await _auth.signOut();
+                    Navigator.pop(context);
+                  },
+                  width: 240,
+                  icon: Icons.logout,
+                  text: "Logout",
+                ),
+              ],
             ),
-            const SizedBox(height: 20),
-            UIHelper.customButton(
-              onPressed: () {
+          ),
 
-              },
-              width: 240,
-              icon: Icons.leave_bags_at_home,
-              text: "Mark Leave",
-            ),
-            const SizedBox(height: 20),
-            UIHelper.customButton(
-              onPressed: () {
-Navigator.push(context, MaterialPageRoute(builder: (context)=>ViewAttendance()));
-              },
-              width: 240,
-              icon: Icons.history,
-              text: "View Attendance",
-            ),
-            const SizedBox(height: 20),
-            UIHelper.customButton(
-              onPressed: () {
-                Navigator.push(context, MaterialPageRoute(builder: (context)=>EditProfile()));
-              },
-              width: 240,
-              icon: Icons.person,
-              text: "Edit Profile",
-            ),
-            const SizedBox(height: 20),
-            UIHelper.customButton(
-              onPressed: () async {
-                await _auth.signOut();
-                Navigator.pop(context);
-              },
-              width: 240,
-              icon: Icons.logout,
-              text: "Logout",
-            ),
-          ],
-        ),
+        ]
       ),
     );
   }

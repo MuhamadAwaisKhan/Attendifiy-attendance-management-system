@@ -16,44 +16,46 @@ class UIHelper {
     EdgeInsetsGeometry? padding,
     bool isLoading = false, // 👈 add loading state
   }) {
-    return SizedBox(
-      width: width,
-      height: height,
-      child: ElevatedButton(
-        onPressed: isLoading ? null : onPressed,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: backgroundColor,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(borderRadius),
+    return Center(
+      child: SizedBox(
+        width: width,
+        height: height,
+        child: ElevatedButton(
+          onPressed: isLoading ? null : onPressed,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: backgroundColor,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(borderRadius),
+            ),
+            padding: padding,
           ),
-          padding: padding,
-        ),
-        child: isLoading
-            ? SizedBox(
-                height: 20,
-                width: 20,
-                child: CircularProgressIndicator(
-                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                  strokeWidth: 2,
-                ),
-              )
-            : Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  if (icon != null) ...[
-                    Icon(icon, color: textColor, size: 18),
-                    SizedBox(width: 8),
-                  ],
-                  Text(
-                    text,
-                    style: TextStyle(
-                      color: textColor,
-                      fontFamily: "Poppins",
-                      fontSize: 15,
-                    ),
+          child: isLoading
+              ? SizedBox(
+                  height: 20,
+                  width: 20,
+                  child: CircularProgressIndicator(
+                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                    strokeWidth: 2,
                   ),
-                ],
-              ),
+                )
+              : Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    if (icon != null) ...[
+                      Icon(icon, color: textColor, size: 18),
+                      SizedBox(width: 8),
+                    ],
+                    Text(
+                      text,
+                      style: TextStyle(
+                        color: textColor,
+                        fontFamily: "Poppins",
+                        fontSize: 15,
+                      ),
+                    ),
+                  ],
+                ),
+        ),
       ),
     );
   }
@@ -119,7 +121,7 @@ class UIHelper {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          content: Text(message, style: GoogleFonts.poppins(fontSize: 15),textAlign: TextAlign.center,),
+          content: Text(message, style: GoogleFonts.poppins(fontSize: 15),textAlign: TextAlign.center,  ),
           actions: [
             TextButton(
               style: TextButton.styleFrom(backgroundColor: Colors.blue),

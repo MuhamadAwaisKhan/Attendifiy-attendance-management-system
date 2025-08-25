@@ -1,4 +1,5 @@
 import 'package:attendencesystem/Provider/authprovider.dart';
+import 'package:attendencesystem/service/notificationservice.dart';
 import 'package:attendencesystem/splashscreen.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
@@ -7,6 +8,7 @@ import 'firebase_options.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  // await NotificationService.init();
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );

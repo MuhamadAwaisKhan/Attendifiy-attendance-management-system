@@ -1,29 +1,24 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:shimmer/shimmer.dart';
-
-class ViewAttendance extends StatefulWidget {
-  const ViewAttendance({super.key});
+class viewallstdattendanceadmin extends StatefulWidget {
+  viewallstdattendanceadmin({super.key,});
 
   @override
-  State<ViewAttendance> createState() => _ViewAttendanceState();
+  State<viewallstdattendanceadmin> createState() => _viewallstdattendanceadminState();
 }
 
-class _ViewAttendanceState extends State<ViewAttendance> {
+class _viewallstdattendanceadminState extends State<viewallstdattendanceadmin> {
   String _selectedFilter = 'All';
   // String _searchDate = '';
   // final TextEditingController _dateController = TextEditingController();
 
   getAttendance() {
-    final user = FirebaseAuth.instance.currentUser;
-    if (user == null) return CircularProgressIndicator();
 
     Query query = FirebaseFirestore.instance
         .collection('attendance')
-        .where('userId', isEqualTo: user.uid)
         .orderBy('date', descending: true);
 
     // Apply status filter
@@ -71,16 +66,13 @@ class _ViewAttendanceState extends State<ViewAttendance> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(
-          "Attendance History",
-          style: GoogleFonts.poppins(
-            fontSize: 18,
-            color: Colors.white,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        centerTitle: true,
+        title: Text(" View Attendance",style: GoogleFonts.poppins(
+          fontWeight: FontWeight.bold,
+          fontSize: 18,
+          color: Colors.white,
+        ),),
         backgroundColor: Colors.blue,
+        centerTitle: true,
       ),
       body: Column(
         children: [
@@ -217,7 +209,7 @@ class _ViewAttendanceState extends State<ViewAttendance> {
                           // _searchDate.isNotEmpty
                           //     ? "No records found for selected date"
                           //     :
-                        "No attendance records found",
+                          "No attendance records found",
                           style: GoogleFonts.poppins(fontSize: 16),
                         ),
                         // if (_searchDate.isNotEmpty)
@@ -305,9 +297,10 @@ class _ViewAttendanceState extends State<ViewAttendance> {
     );
   }
 
-  // @override
-  // void dispose() {
-  //   _dateController.dispose();
-  //   super.dispose();
-  // }
+// @override
+// void dispose() {
+//   _dateController.dispose();
+//   super.dispose();
+// }
+
 }
