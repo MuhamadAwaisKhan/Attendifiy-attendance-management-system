@@ -42,7 +42,7 @@ class LeaveApprovalScreen extends StatelessWidget {
 
       await _firestore.collection('attendance').add({
         'userId': userId,
-        'date': DateFormat('yyyy-MM-dd').format(leaveDate),
+        'date': DateFormat('dd-MM-yyyy').format(leaveDate),
         'status': attendanceStatus,
         'markedAt': Timestamp.now(),
       });

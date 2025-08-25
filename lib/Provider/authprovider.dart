@@ -183,6 +183,28 @@ class AuthProvider with ChangeNotifier {
       print(e.toString());
     }
   }
+// Enhanced logout function
+  Future<void> logout(BuildContext context) async {
+    try {
+      await _auth.signOut();
+      notifyListeners();
+
+      // Navigate back to login screen and clear navigation stack
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(builder: (context) => LoginScreen()),
+            (Route<dynamic> route) => false,
+      );
+    } catch (e) {
+      print('Logout error: $e');
+      // Even if there's an error, we should still navigate to login
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(builder: (context) => LoginScreen()),
+            (Route<dynamic> route) => false,
+      );
+    }
+  }
+
+// Enhanced login function
   Future<void> login(
       BuildContext context,
       String email,
@@ -209,7 +231,6 @@ class AuthProvider with ChangeNotifier {
       },
     );
 
-
     try {
       // Sign in with Firebase Auth
       UserCredential cred = await _auth.signInWithEmailAndPassword(
@@ -217,7 +238,7 @@ class AuthProvider with ChangeNotifier {
         password: password,
       );
 
-      // Get user document
+      // Check if user document exists in Firestore
       DocumentSnapshot doc =
       await firestore.collection('users').doc(cred.user!.uid).get();
 
@@ -235,7 +256,7 @@ class AuthProvider with ChangeNotifier {
             MaterialPageRoute(builder: (context) => StudentDashboard()),
           );
         } else {
-          // No role → Assume Admin
+          // User has document but no role or different role → Admin
           UIHelper.customalertbox(context, "Welcome Admin");
           Navigator.pushReplacement(
             context,
@@ -243,12 +264,30 @@ class AuthProvider with ChangeNotifier {
           );
         }
       } else {
-        // No document → Admin
-        UIHelper.customalertbox(context, "Welcome Admin");
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => AdminDashboard()),
-        );
+        // No document → Check if this is a manually created admin account
+        // For manually created admin accounts, we need to create a document
+        if (isManualAdminAccount(email)) {
+          // Create a user document for the admin
+          await firestore.collection('users').doc(cred.user!.uid).set({
+            'email': email,
+            'role': 'admin',
+            'createdAt': FieldValue.serverTimestamp(),
+            'isManualAdmin': true,
+          });
+
+          UIHelper.customalertbox(context, "Welcome Admin");
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => AdminDashboard()),
+          );
+        } else {
+          // Not a manual admin account, show error
+          await _auth.signOut(); // Sign out since no valid user document
+          UIHelper.customalertbox(
+            context,
+            "Account not properly set up. Please contact administrator.",
+          );
+        }
       }
     } on FirebaseAuthException catch (e) {
       Navigator.pop(context); // Close loading on error
@@ -278,14 +317,26 @@ class AuthProvider with ChangeNotifier {
     }
   }
 
+// Helper function to identify manual admin accounts
+  bool isManualAdminAccount(String email) {
+    // You can implement logic to check if this email is one of your manual admin accounts
+    // This could be a hardcoded list or a check in a separate collection
+    List<String> manualAdminEmails = [
+      'awais@admin.com',
+      'admin2@example.com',
+      // Add all your manual admin emails here
+    ];
 
-  Future<void> logout(BuildContext context) async {
-    await _auth.signOut();
-     notifyListeners();
+    return manualAdminEmails.contains(email);
   }
-  Future<void> logoutforadmin(BuildContext context) async {
-    await _auth.signOut();
-      Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => LoginScreen()));
-     notifyListeners();
-  }
+
+  // Future<void> logout(BuildContext context) async {
+  //   await _auth.signOut();
+  //    notifyListeners();
+  // }
+  // Future<void> logoutforadmin(BuildContext context) async {
+  //   await _auth.signOut();
+  //     Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => LoginScreen()));
+  //    notifyListeners();
+  // }
 }

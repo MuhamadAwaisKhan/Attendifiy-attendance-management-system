@@ -14,7 +14,9 @@ class viewrecord extends StatefulWidget {
 
 class _viewrecordState extends State<viewrecord> {
   Stream<QuerySnapshot> getUsersStream() {
-    return FirebaseFirestore.instance.collection('users').snapshots();
+    return FirebaseFirestore.instance.collection('users').
+    where('role',isEqualTo:'student' ).
+    snapshots();
   }
   @override
   Widget build(BuildContext context) {
@@ -76,7 +78,7 @@ class _viewrecordState extends State<viewrecord> {
                 child: ListTile(
                   leading: CircleAvatar(
                     backgroundColor: Colors.blue,
-                    backgroundImage: NetworkImage(user['profileImage']),
+                    backgroundImage: NetworkImage(user['profileImage'] ?? 'N/A'),
                   ),
                   title: Text("Name: ${user['name']}"),
                   subtitle: Text('Reg No: ${user['regno']}'),

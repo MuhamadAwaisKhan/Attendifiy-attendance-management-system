@@ -142,21 +142,28 @@ class _viewonestdattendanceadminState extends State<viewonestdattendanceadmin> {
         title: Column(
           children: [
             Text(
-              widget.name,
+              "${widget.name}",
               style: GoogleFonts.poppins(
                 fontWeight: FontWeight.bold,
                 fontSize: 18,
                 color: Colors.white,
               ),
             ),
+SizedBox(
+  height: 5,
+),
           Text(
-              widget.regno,
+            "Reg no:  ${ widget.regno}",
               style: GoogleFonts.poppins(
                 // fontWeight: FontWeight.bold,
                 fontSize: 15,
                 color: Colors.black,
               ),
-          )
+          ),
+            SizedBox(
+              height: 5,
+            ),
+
           ],
         ),
         backgroundColor: Colors.blue,
@@ -345,7 +352,7 @@ class _viewonestdattendanceadminState extends State<viewonestdattendanceadmin> {
                                                 fontSize: 15, fontWeight: FontWeight.bold)),
                                         content: DropdownButtonFormField<String>(
                                           value: currentStatus,
-                                          items: ['Present', 'Absent', 'Approved Leave']
+                                          items: ['Present', 'Absent']
                                               .map((status) => DropdownMenuItem(
                                             value: status,
                                             child: Text(status),
@@ -368,8 +375,11 @@ class _viewonestdattendanceadminState extends State<viewonestdattendanceadmin> {
                                         actions: [
                                           TextButton(
                                               onPressed: () => Navigator.of(context).pop(),
-                                              child: Text("Cancel")),
+                                              child: Text("Cancel",style: GoogleFonts.poppins(color: Colors.red),)),
                                           ElevatedButton(
+                                            style: ElevatedButton.styleFrom(
+                                              backgroundColor: Colors.blue,
+                                            ),
                                             onPressed: () async {
                                               try {
                                                 await data.reference.update({
@@ -384,7 +394,12 @@ class _viewonestdattendanceadminState extends State<viewonestdattendanceadmin> {
                                                     SnackBar(content: Text('Error: $e')));
                                               }
                                             },
-                                            child: Text("Update"),
+
+                                            child: Text("Update",style: GoogleFonts.poppins(
+                                              color: Colors.white,
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 15,
+                                            ),),
                                           )
                                         ],
                                       );

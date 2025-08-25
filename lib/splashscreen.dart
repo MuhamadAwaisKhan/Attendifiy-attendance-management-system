@@ -1,10 +1,17 @@
 import 'dart:async';
 
 import 'package:animated_text_kit/animated_text_kit.dart';
+import 'package:attendencesystem/admin/admindashboard.dart';
 import 'package:attendencesystem/loginpage.dart';
+import 'package:attendencesystem/student/stdhomescreen.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
 
@@ -17,21 +24,74 @@ class _SplashScreenState extends State<SplashScreen>
   late final AnimationController controller = AnimationController(
     vsync: this,
     duration: const Duration(seconds: 4),
-  )..repeat();
-
+  )
+    ..repeat();
 
   @override
   void initState() {
     super.initState();
+    _startSplashTimer();
+  }
 
-    // Navigate to HomePage after 4 seconds
-    Timer(const Duration(seconds: 9), () {
+  Future<void> _startSplashTimer() async {
+    final prefs = await SharedPreferences.getInstance();
+    final isFirstTime = prefs.getBool('isFirstTime') ?? true;
+
+    // Set timer: 9s first time, 4s otherwise
+    int splashDuration = isFirstTime ? 9 : 5;
+
+    // After first time, set isFirstTime = false
+    if (isFirstTime) {
+      await prefs.setBool('isFirstTime', false);
+    }
+
+    Timer(Duration(seconds: splashDuration), () => _checkUserRole());
+  }
+
+  Future<void> _checkUserRole() async {
+    final auth = FirebaseAuth.instance;
+    final user = auth.currentUser;
+
+    if (user != null) {
+      final userDoc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .get();
+
+      if (userDoc.exists) {
+        final role = userDoc.data()?['role'];
+
+        if (role == 'student') {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => StudentDashboard()),
+          );
+        } else if (role == 'admin') {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => AdminDashboard()),
+          );
+        } else {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => LoginScreen()),
+          );
+        }
+      } else {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => LoginScreen()),
+        );
+      }
+    } else {
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (context) =>  LoginScreen()),
+        MaterialPageRoute(builder: (context) => LoginScreen()),
       );
-    });
+    }
   }
+
+
 
   @override
   void dispose() {
@@ -48,11 +108,15 @@ class _SplashScreenState extends State<SplashScreen>
         children: [
 
           // App logo
-          Image.network(
-            "https://wpschoolpress.com/wp-content/uploads/2023/05/Attendance-Management-System.png",
+          CachedNetworkImage(
+            imageUrl: "https://wpschoolpress.com/wp-content/uploads/2023/05/Attendance-Management-System.png",
             height: 150,
+            placeholder: (context, url) => Center(
+              child: CircularProgressIndicator(color: Colors.blue,), // Shows loader until image loads
+            ),
+            errorWidget: (context, url, error) => Icon(Icons.error), // If image fails to load
+            fit: BoxFit.cover, // optional
           ),
-
           const SizedBox(height: 20),
 
           // App name

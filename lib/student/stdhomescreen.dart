@@ -8,6 +8,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 
 import '../service/studentnotificationlistener.dart';
+import 'checkleaveuserscreen.dart';
 import 'editprofile.dart';
 
 class StudentDashboard extends StatefulWidget {
@@ -102,7 +103,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
                     ),
                   ),
                 ),
-                const SizedBox(width: 20),
+                 SizedBox(width: 20),
                 TextButton(
                   style: TextButton.styleFrom(backgroundColor: Colors.blue),
                   onPressed: () => Navigator.pop(context, selectedRole),
@@ -188,99 +189,137 @@ class _StudentDashboardState extends State<StudentDashboard> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          "Student Dashboard",
-          style: GoogleFonts.poppins(
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
-          ),
-        ),
-        centerTitle: true,
-        backgroundColor: Colors.blue,
-        leading:  SizedBox(),
-      ),
-      body: Stack(
-        children:[
-          // StudentNotificationListener(), // 👈 This listens for notifications
-
-          Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                UIHelper.customButton(
-                  onPressed: () async {
-                    await markAttendance(context);
-                  },
-                  width: 240,
-                  icon: Icons.check_circle,
-                  text: "Mark Attendance",
+    return WillPopScope(
+      // onWillPop: () async => false,
+      onWillPop: () async {
+        final shouldExit = await showDialog<bool>(
+          context: context,
+          builder: (context) {
+            return AlertDialog(
+              title:  Text("Exit App",style: GoogleFonts.poppins(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Colors.blue,
+              ),),
+              content:  Text("Do you really want to exit the app?",style: GoogleFonts.poppins(),),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(false),
+                  child:  Text("No",style: GoogleFonts.poppins(
+                      color: Colors.red
+                  )),
                 ),
-                SizedBox(height: 20),
-                UIHelper.customButton(
-                  onPressed: () {
-                    addDummyAttendanceData();
-                  },
-                  width: 240,
-                  icon: Icons.leave_bags_at_home,
-                  text: "Dummy attendence",
-                ),
-                SizedBox(height: 20),
-                UIHelper.customButton(
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) =>
-                            MarkLeaveScreen(userId: _auth.currentUser!.uid),
-                      ),
-                    );
-                  },
-                  width: 240,
-                  icon: Icons.leave_bags_at_home,
-                  text: "Mark Leave",
-                ),
-                SizedBox(height: 20),
-                UIHelper.customButton(
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => ViewAttendance()),
-                    );
-                  },
-                  width: 240,
-                  icon: Icons.history,
-                  text: "View Attendance",
-                ),
-                SizedBox(height: 20),
-                UIHelper.customButton(
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => EditProfile()),
-                    );
-                  },
-                  width: 240,
-                  icon: Icons.person,
-                  text: "Edit Profile",
-                ),
-                SizedBox(height: 20),
-                UIHelper.customButton(
-                  onPressed: () async {
-                    await _auth.signOut();
-                    Navigator.pop(context);
-                  },
-                  width: 240,
-                  icon: Icons.logout,
-                  text: "Logout",
+                TextButton(
+                  style: TextButton.styleFrom(backgroundColor: Colors.blue),
+                  onPressed: () => Navigator.of(context).pop(true),
+                  child:  Text("Yes",style: GoogleFonts.poppins(
+                      color: Colors.white
+                  )),
                 ),
               ],
+            );
+          },
+        );
+
+        // Return true if user confirmed exit, false otherwise
+        return shouldExit ?? false;
+      },
+
+      child: Scaffold(
+        appBar: AppBar(
+          title: Text(
+            "Student Dashboard",
+            style: GoogleFonts.poppins(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
             ),
           ),
+          centerTitle: true,
+          backgroundColor: Colors.blue,
+          leading:  SizedBox(),
+        ),
+        body: Stack(
+          children:[
+            // StudentNotificationListener(), // 👈 This listens for notifications
 
-        ]
+            Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  UIHelper.customButton(
+                    onPressed: () async {
+                      await markAttendance(context);
+                    },
+                    width: 240,
+                    icon: Icons.check_circle,
+                    text: "Mark Attendance",
+                  ),
+                  SizedBox(height: 20),
+                  UIHelper.customButton(
+                    onPressed: () {
+      Navigator.push(context, MaterialPageRoute(builder: (context)=>checkstatusleave(uid: _auth.currentUser!.uid,)));
+
+                    },
+                    width: 240,
+                    icon: Icons.fact_check,
+                    text: "Check Leave Status",
+                  ),
+                  SizedBox(height: 20),
+                  UIHelper.customButton(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) =>
+                              MarkLeaveScreen(userId: _auth.currentUser!.uid),
+                        ),
+                      );
+                    },
+                    width: 240,
+                    icon: Icons.leave_bags_at_home,
+                    text: "Mark Leave",
+                  ),
+                  SizedBox(height: 20),
+                  UIHelper.customButton(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => ViewAttendance()),
+                      );
+                    },
+                    width: 240,
+                    icon: Icons.history,
+                    text: "View Attendance",
+                  ),
+                  SizedBox(height: 20),
+                  UIHelper.customButton(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => EditProfile()),
+                      );
+                    },
+                    width: 240,
+                    icon: Icons.person,
+                    text: "Edit Profile",
+                  ),
+                  SizedBox(height: 20),
+                  UIHelper.customButton(
+                    onPressed: () async {
+                      await _auth.signOut();
+                      Navigator.pop(context);
+                    },
+                    width: 240,
+                    icon: Icons.logout,
+                    text: "Logout",
+                  ),
+                ],
+              ),
+            ),
+
+          ]
+        ),
       ),
     );
   }
