@@ -24,8 +24,7 @@ class _SplashScreenState extends State<SplashScreen>
   late final AnimationController controller = AnimationController(
     vsync: this,
     duration: const Duration(seconds: 4),
-  )
-    ..repeat();
+  )..repeat();
 
   @override
   void initState() {
@@ -38,49 +37,44 @@ class _SplashScreenState extends State<SplashScreen>
     final isFirstTime = prefs.getBool('isFirstTime') ?? true;
 
     // Set timer: 9s first time, 4s otherwise
-    int splashDuration = isFirstTime ? 9 : 5;
+    int splashDuration = isFirstTime ? 9 : 3;
 
     // After first time, set isFirstTime = false
     if (isFirstTime) {
       await prefs.setBool('isFirstTime', false);
     }
 
-    Timer(Duration(seconds: splashDuration), () => _checkUserRole());
+    Timer(Duration(seconds: splashDuration), () => checkLogin());
   }
 
-  Future<void> _checkUserRole() async {
-    final auth = FirebaseAuth.instance;
-    final user = auth.currentUser;
+  Future<void> checkLogin() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    bool userlogin = prefs.getBool("isLoggedIn") ?? false;
+    String? userrole = prefs.getString("role");
 
-    if (user != null) {
-      final userDoc = await FirebaseFirestore.instance
-          .collection('users')
-          .doc(user.uid)
-          .get();
 
-      if (userDoc.exists) {
-        final role = userDoc.data()?['role'];
+    // Add a small delay to ensure context is available
+    await Future.delayed(Duration(milliseconds: 100));
 
-        if (role == 'student') {
+    if (userlogin !=  null) {
+      // Navigate to the appropriate dashboard based on role
+      if (userlogin) {
+        if(userrole=='student'){
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(builder: (context) => StudentDashboard()),
           );
-        } else if (role == 'admin') {
+        }else if(userrole=='admin'){
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(builder: (context) => AdminDashboard()),
           );
-        } else {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (context) => LoginScreen()),
-          );
         }
+
       } else {
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => LoginScreen()),
+          MaterialPageRoute(builder: (context) => AdminDashboard()),
         );
       }
     } else {
@@ -92,6 +86,48 @@ class _SplashScreenState extends State<SplashScreen>
   }
 
 
+  // Future<void> _checkUserRole() async {
+  //   final auth = FirebaseAuth.instance;
+  //   final user = auth.currentUser;
+  //
+  //   if (user != null) {
+  //     final userDoc = await FirebaseFirestore.instance
+  //         .collection('users')
+  //         .doc(user.uid)
+  //         .get();
+  //
+  //     if (userDoc.exists) {
+  //       final role = userDoc.data()?['role'];
+  //
+  //       if (role == 'student') {
+  //         Navigator.pushReplacement(
+  //           context,
+  //           MaterialPageRoute(builder: (context) => StudentDashboard()),
+  //         );
+  //       } else if (role == 'admin') {
+  //         Navigator.pushReplacement(
+  //           context,
+  //           MaterialPageRoute(builder: (context) => AdminDashboard()),
+  //         );
+  //       } else {
+  //         Navigator.pushReplacement(
+  //           context,
+  //           MaterialPageRoute(builder: (context) => LoginScreen()),
+  //         );
+  //       }
+  //     } else {
+  //       Navigator.pushReplacement(
+  //         context,
+  //         MaterialPageRoute(builder: (context) => LoginScreen()),
+  //       );
+  //     }
+  //   } else {
+  //     Navigator.pushReplacement(
+  //       context,
+  //       MaterialPageRoute(builder: (context) => LoginScreen()),
+  //     );
+  //   }
+  // }
 
   @override
   void dispose() {
@@ -106,15 +142,18 @@ class _SplashScreenState extends State<SplashScreen>
       body: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-
           // App logo
           CachedNetworkImage(
-            imageUrl: "https://wpschoolpress.com/wp-content/uploads/2023/05/Attendance-Management-System.png",
+            imageUrl:
+                "https://wpschoolpress.com/wp-content/uploads/2023/05/Attendance-Management-System.png",
             height: 150,
             placeholder: (context, url) => Center(
-              child: CircularProgressIndicator(color: Colors.blue,), // Shows loader until image loads
+              child: CircularProgressIndicator(
+                color: Colors.blue,
+              ), // Shows loader until image loads
             ),
-            errorWidget: (context, url, error) => Icon(Icons.error), // If image fails to load
+            errorWidget: (context, url, error) => Icon(Icons.error),
+            // If image fails to load
             fit: BoxFit.cover, // optional
           ),
           const SizedBox(height: 20),
@@ -164,4 +203,3 @@ class _SplashScreenState extends State<SplashScreen>
     );
   }
 }
-

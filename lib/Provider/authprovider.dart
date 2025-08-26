@@ -9,6 +9,7 @@ import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../loginpage.dart';
 import '../student/stdhomescreen.dart';
@@ -183,34 +184,8 @@ class AuthProvider with ChangeNotifier {
       print(e.toString());
     }
   }
-// Enhanced logout function
-  Future<void> logout(BuildContext context) async {
-    try {
-      await _auth.signOut();
-      notifyListeners();
 
-      // Navigate back to login screen and clear navigation stack
-      Navigator.of(context).pushAndRemoveUntil(
-        MaterialPageRoute(builder: (context) => LoginScreen()),
-            (Route<dynamic> route) => false,
-      );
-    } catch (e) {
-      print('Logout error: $e');
-      // Even if there's an error, we should still navigate to login
-      Navigator.of(context).pushAndRemoveUntil(
-        MaterialPageRoute(builder: (context) => LoginScreen()),
-            (Route<dynamic> route) => false,
-      );
-    }
-  }
-
-// Enhanced login function
-  Future<void> login(
-      BuildContext context,
-      String email,
-      String password,
-      ) async {
-    // Show loading indicator
+  Future<void> login(BuildContext context, String email, String password) async {
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -238,36 +213,29 @@ class AuthProvider with ChangeNotifier {
         password: password,
       );
 
-      // Check if user document exists in Firestore
-      DocumentSnapshot doc =
-      await firestore.collection('users').doc(cred.user!.uid).get();
+      // Check Firestore user document
+      DocumentSnapshot doc = await firestore.collection('users').doc(cred.user!.uid).get();
 
-      // Close loading indicator
-      Navigator.pop(context);
+      // Close loading only if widget is still mounted
+       Navigator.pop(context);
 
       if (doc.exists && doc.data() != null) {
         final data = doc.data() as Map<String, dynamic>;
+        SharedPreferences prefs = await SharedPreferences.getInstance();
+        await prefs.setBool("isLoggedIn", true);
+        await prefs.setString("role", 'student');
 
-        // If role exists and is student → StudentDashboard
-        if (data.containsKey('role') && data['role'] == 'student') {
+
+        if (data['role'] == 'student') {
           UIHelper.customalertbox(context, "Login successful");
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (context) => StudentDashboard()),
-          );
+          Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => StudentDashboard()));
         } else {
-          // User has document but no role or different role → Admin
           UIHelper.customalertbox(context, "Welcome Admin");
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (context) => AdminDashboard()),
-          );
+          Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => AdminDashboard()));
         }
       } else {
-        // No document → Check if this is a manually created admin account
-        // For manually created admin accounts, we need to create a document
+        // If manual admin
         if (isManualAdminAccount(email)) {
-          // Create a user document for the admin
           await firestore.collection('users').doc(cred.user!.uid).set({
             'email': email,
             'role': 'admin',
@@ -275,68 +243,94 @@ class AuthProvider with ChangeNotifier {
             'isManualAdmin': true,
           });
 
+          SharedPreferences prefs = await SharedPreferences.getInstance();
+          await prefs.setBool("isLoggedIn", true);
+          await prefs.setString("role", 'admin');
+
           UIHelper.customalertbox(context, "Welcome Admin");
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (context) => AdminDashboard()),
-          );
+          Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => AdminDashboard()));
         } else {
-          // Not a manual admin account, show error
-          await _auth.signOut(); // Sign out since no valid user document
-          UIHelper.customalertbox(
-            context,
-            "Account not properly set up. Please contact administrator.",
-          );
+          await _auth.signOut();
+          UIHelper.customalertbox(context, "Account not properly set up. Contact admin.");
         }
       }
     } on FirebaseAuthException catch (e) {
-      Navigator.pop(context); // Close loading on error
+      Navigator.pop(context); // Close loading only if mounted
 
-      String errorMessage = "Login failed";
-      if (e.code == 'user-not-found') {
-        errorMessage = "No user found with this email.";
-      } else if (e.code == 'wrong-password') {
-        errorMessage = "Incorrect password. Please try again.";
-      } else if (e.code == 'invalid-email') {
-        errorMessage = "The email address is badly formatted.";
-      } else if (e.code == 'user-disabled') {
-        errorMessage = "This account has been disabled by an administrator.";
-      } else if (e.code == 'too-many-requests') {
-        errorMessage = "Too many attempts. Try again later.";
-      } else {
-        errorMessage = e.message ?? errorMessage;
+      String errorMessage;
+      switch (e.code) {
+        case 'user-not-found':
+          errorMessage = "No user found with this email.";
+          break;
+        case 'wrong-password':
+          errorMessage = "Incorrect password.";
+          break;
+        case 'invalid-email':
+          errorMessage = "Invalid email format.";
+          break;
+        case 'user-disabled':
+          errorMessage = "Account disabled.";
+          break;
+        case 'too-many-requests':
+          errorMessage = "Too many attempts. Try later.";
+          break;
+        default:
+          errorMessage = e.message ?? "Login failed";
       }
 
       UIHelper.customalertbox(context, errorMessage);
     } catch (e) {
-      Navigator.pop(context); // Close loading on unexpected error
-      UIHelper.customalertbox(
-        context,
-        "An unexpected error occurred. Please try again.",
-      );
+       Navigator.pop(context);
+      UIHelper.customalertbox(context, "Unexpected error: $e");
     }
   }
 
-// Helper function to identify manual admin accounts
   bool isManualAdminAccount(String email) {
-    // You can implement logic to check if this email is one of your manual admin accounts
-    // This could be a hardcoded list or a check in a separate collection
     List<String> manualAdminEmails = [
       'awais@admin.com',
       'admin2@example.com',
-      // Add all your manual admin emails here
     ];
-
     return manualAdminEmails.contains(email);
   }
 
-  // Future<void> logout(BuildContext context) async {
-  //   await _auth.signOut();
-  //    notifyListeners();
-  // }
+//   Future<void> logout(BuildContext context) async {
+//     try {
+//       await _auth.signOut();
+//
+//       // Clear all stored preferences
+//       SharedPreferences prefs = await SharedPreferences.getInstance();
+//       await prefs.remove("isLoggedIn");
+//       await prefs.clear();
+// notifyListeners();
+//
+//       Navigator.of(context, rootNavigator: true).pushAndRemoveUntil(
+//         MaterialPageRoute(builder: (context) => LoginScreen()),
+//             (Route<dynamic> route) => false,
+//       );
+//     } catch (e) {
+//       print('Logout error: $e');
+//       // Even if there's an error, navigate to login screen
+//       // Navigator.pushReplacement(context, MaterialPageRoute(builder: (context)=>LoginScreen()));
+//
+//       Navigator.of(context, rootNavigator: true).pushAndRemoveUntil(
+//         MaterialPageRoute(builder: (context) => LoginScreen()),
+//             (Route<dynamic> route) => false,
+//       );
+//     }
+//   }
+  Future<void> logout(BuildContext context) async {
+    await _auth.signOut();
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.setBool("isLoggedIn", false);
+    await prefs.remove("isLoggedIn");
+    await prefs.clear();
+    // Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => LoginScreen()));
+     notifyListeners();
+  }
   // Future<void> logoutforadmin(BuildContext context) async {
   //   await _auth.signOut();
   //     Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => LoginScreen()));
   //    notifyListeners();
   // }
+
 }

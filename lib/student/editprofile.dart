@@ -149,88 +149,48 @@ class _EditProfileState extends State<EditProfile> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Center(
-              child: InkWell(
-                onTap: () {
-                  showoptionbox(context);
-                },
-                child: _profilePicUrl != null && _profilePicUrl!.isNotEmpty
-                    ? Container(
-                      child: Center(
-                        child: Stack(
-                          children: [
-                            // Main Avatar
-                            InkWell(
-                              onTap: () {
-                                showoptionbox(context);
-                              },
-                              child: pickedimage != null
-                                  ? CircleAvatar(
-                                radius: 80,
-                                backgroundImage: FileImage(pickedimage!),
-                              )
-                                  : _profilePicUrl != null && _profilePicUrl!.isNotEmpty
-                                  ? CircleAvatar(
-                                radius: 80,
-                                backgroundImage: NetworkImage(_profilePicUrl!),
-                              )
-                                  : CircleAvatar(
-                                backgroundColor: Colors.blue,
-                                radius: 80,
-                                child: Icon(
-                                  color: Colors.white,
-                                  CupertinoIcons.person,
-                                  size: 60,
-                                ),
-                              ),
-                            ),
+        Center(
+        child: Stack(
+        alignment: Alignment.center,
+          children: [
+            // Profile Avatar
+            CircleAvatar(
+              radius: 80,
+              backgroundImage: pickedimage != null
+                  ? FileImage(pickedimage!)
+                  : (_profilePicUrl != null && _profilePicUrl!.isNotEmpty)
+                  ? NetworkImage(_profilePicUrl!)
+                  : null,
+              backgroundColor: (pickedimage == null &&
+                  (_profilePicUrl == null || _profilePicUrl!.isEmpty))
+                  ? Colors.blue
+                  : Colors.indigo,
+              child: (pickedimage == null &&
+                  (_profilePicUrl == null || _profilePicUrl!.isEmpty))
+                  ? Icon(CupertinoIcons.person, color: Colors.white, size: 60)
+                  : null,
+            ),
 
-                            // Camera Icon Overlay
-                            Positioned(
-                              bottom: 5,
-                              right: 5,
-                              child: GestureDetector(
-                                onTap: () {
-                                  showoptionbox(context);
-                                },
-                                child: Container(
-                                  padding: EdgeInsets.all(8),
-                                  decoration: BoxDecoration(
-                                    color: Colors.blue.withOpacity(0.8),
-                                    shape: BoxShape.circle,
-                                    border: Border.all(color: Colors.white, width: 2),
-                                  ),
-                                  child: Icon(
-                                    Icons.camera_alt,
-                                    color: Colors.white,
-                                    size: 20,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    )
-                    : Container(
-                      child: Center(
-                        child: Stack(
-                          children:[ CircleAvatar(
-                              backgroundColor: Colors.blue,
-                              radius: 80,
-                              child: Icon(
-                                color: Colors.white,
-                                CupertinoIcons.person,
-                                size: 60,
-                              ),
-                            ),
-
-                        ]
-                        ),
-                      ),
-                    ),
+            // Camera icon overlay
+            Positioned(
+              bottom: 5,
+              right: 5,
+              child: GestureDetector(
+                onTap: () => showoptionbox(context),
+                child: Container(
+                  padding: EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.blue.withOpacity(0.8),
+                    shape: BoxShape.circle,
+                    border: Border.all(color: Colors.white, width: 2),
+                  ),
+                  child: Icon(Icons.camera_alt, color: Colors.white, size: 20),
+                ),
               ),
             ),
+          ],
+        ),
+      ),
             SizedBox(height: 20),
             UIHelper.customTextField(
               controller: _nameController,

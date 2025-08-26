@@ -6,8 +6,9 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
-import '../service/studentnotificationlistener.dart';
+import '../loginpage.dart';
 import 'checkleaveuserscreen.dart';
 import 'editprofile.dart';
 
@@ -122,7 +123,14 @@ class _StudentDashboardState extends State<StudentDashboard> {
       },
     );
   }
-
+  Future<void> logout(BuildContext context) async {
+    await _auth.signOut();
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.setBool("isLoggedIn", false);
+    await prefs.remove("isLoggedIn");
+    await prefs.clear();
+    Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => LoginScreen()));
+  }
   Future<void> addDummyAttendanceData() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
@@ -307,8 +315,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
                   SizedBox(height: 20),
                   UIHelper.customButton(
                     onPressed: () async {
-                      await _auth.signOut();
-                      Navigator.pop(context);
+logout(context);
                     },
                     width: 240,
                     icon: Icons.logout,

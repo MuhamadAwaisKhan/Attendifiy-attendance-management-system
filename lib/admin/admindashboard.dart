@@ -1,11 +1,14 @@
 import 'package:attendencesystem/UIHelper/customwidgets.dart';
 import 'package:attendencesystem/admin/viewallstudentattendance.dart';
 import 'package:attendencesystem/admin/viewrecord.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../Provider/authprovider.dart';
+import '../loginpage.dart';
 import 'leaveapprovalscreenadmin.dart';
 
 class AdminDashboard extends StatelessWidget {
@@ -13,7 +16,15 @@ class AdminDashboard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-
+    final _auth = FirebaseAuth.instance;
+    Future<void> logout(BuildContext context) async {
+      await _auth.signOut();
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      await prefs.setBool("isLoggedIn", false);
+      await prefs.remove("isLoggedIn");
+      await prefs.clear();
+      Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => LoginScreen()));
+    }
     return WillPopScope(
       // onWillPop: () async => false,
       onWillPop: () async {
@@ -64,7 +75,7 @@ class AdminDashboard extends StatelessWidget {
           actions: [
             IconButton(
               onPressed: () {
-                context.read<AuthProvider>().logout(context); // ✅
+                logout(context);
               },
               icon: Icon(Icons.logout, color: Colors.white),
             ),
