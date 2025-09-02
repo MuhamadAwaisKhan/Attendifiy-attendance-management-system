@@ -1,6 +1,6 @@
-import 'package:attendencesystem/UIHelper/customwidgets.dart';
-import 'package:attendencesystem/student/leaveuserscreen.dart';
-import 'package:attendencesystem/student/viewattendence.dart';
+import 'package:attendencesystem/faculty/courses.dart';
+import 'package:attendencesystem/faculty/editprofilefaculty.dart';
+import 'package:attendencesystem/faculty/loginpagefaculty.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -8,23 +8,25 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'loginpage.dart';
-import 'checkleaveuserscreen.dart';
-import 'editprofile.dart';
+import '../UIHelper/customwidgets.dart';
+import '../service/authservice.dart';
 
-class StudentDashboard extends StatefulWidget {
-  const StudentDashboard({super.key});
+class facultydashboard extends StatefulWidget {
+  const facultydashboard({super.key});
 
   @override
-  State<StudentDashboard> createState() => _StudentDashboardState();
+  State<facultydashboard> createState() => _facultydashboardState();
 }
 
-class _StudentDashboardState extends State<StudentDashboard> {
+class _facultydashboardState extends State<facultydashboard> {
   final _auth = FirebaseAuth.instance;
   String? selectedRole; // Changed to nullable String
   String? lastAttendanceStatus; // Added this variable
   bool isloading = false;
-
+initState(){
+  super.initState();
+  autoMarkAbsent();
+}
   /// ✅ Show Attendance Options
   Future<String?> showOptionBox(BuildContext context) async {
     String? dialogSelectedRole; // Local variable for the dialog
@@ -135,30 +137,45 @@ class _StudentDashboardState extends State<StudentDashboard> {
     await prefs.remove("isLoggedIn");
     await prefs.clear();
     Navigator.pushReplacement(
-        context, MaterialPageRoute(builder: (context) => LoginScreen()));
+      context,
+      MaterialPageRoute(builder: (context) => LoginScreenfaculty()),
+    );
   }
 
   Future<void> markAttendance(BuildContext context) async {
     final firestore = FirebaseFirestore.instance;
     final uid = _auth.currentUser!.uid;
-    final today = DateTime.now();
-    final date = DateFormat('dd-MM-yyyy').format(today);
+    final now = DateTime.now();
+    final date = DateFormat('dd-MM-yyyy').format(now);
+
+    // Define attendance marking window: 9:00 AM - 10:00 AM
+    final startTime = DateTime(now.year, now.month, now.day, 8, 30); // 8:30 AM
+    final endTime = DateTime(now.year, now.month, now.day, 10, 0); // 10:00 AM
+
+    // Check if current time is within the allowed window
+    if (now.isBefore(startTime) || now.isAfter(endTime)) {
+      UIHelper.customalertbox(
+        context,
+        "Attendance can only be marked between 8:30 AM - 10:00 AM ⏰",
+      );
+      return;
+    }
 
     try {
       final markRef = await firestore
-          .collection('attendance')
+          .collection('facultyattendance')
           .where('userId', isEqualTo: uid)
           .where('date', isEqualTo: date)
           .get();
 
       if (markRef.docs.isNotEmpty) {
-        // 👇 Already marked, don't show dialog
+        // Already marked
         UIHelper.customalertbox(
           context,
           "You have already marked attendance today!",
         );
       } else {
-        // 👇 Not marked yet → show options
+        // Show attendance status options
         final value = await showOptionBox(context);
         if (value != null && value.isNotEmpty) {
           setState(() {
@@ -166,8 +183,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
           });
 
           try {
-            // Add new document to Firestore
-            await firestore.collection('attendance').add({
+            await firestore.collection('facultyattendance').add({
               'userId': uid,
               "date": date,
               "status": value,
@@ -190,6 +206,39 @@ class _StudentDashboardState extends State<StudentDashboard> {
       }
     } catch (e) {
       UIHelper.customalertbox(context, "Error: $e");
+    }
+  }
+  Future<void> autoMarkAbsent() async {
+    final firestore = FirebaseFirestore.instance;
+    final today = DateTime.now();
+    final date = DateFormat('dd-MM-yyyy').format(today);
+
+    // Time window end: 10 AM
+    final endTime = DateTime(today.year, today.month, today.day, 10, 0);
+
+    if (DateTime.now().isAfter(endTime)) {
+      final users = await firestore.collection('faculty').get();
+
+      for (var user in users.docs) {
+        final uid = user.id;
+
+        // Check if attendance exists for this user
+        final markRef = await firestore
+            .collection('facultyattendance') // ✅ FIXED name
+            .where('userId', isEqualTo: uid)
+            .where('date', isEqualTo: date)
+            .get();
+
+        if (markRef.docs.isEmpty) {
+          // Mark Absent only if no record exists
+          await firestore.collection('facultyattendance').add({
+            'userId': uid,
+            'date': date,
+            'status': 'Absent',
+            'markedAt': FieldValue.serverTimestamp(),
+          });
+        }
+      }
     }
   }
 
@@ -240,7 +289,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
       child: Scaffold(
         appBar: AppBar(
           title: Text(
-            "Student Dashboard",
+            "Faculty Dashboard",
             style: GoogleFonts.poppins(
               fontSize: 18,
               fontWeight: FontWeight.bold,
@@ -264,7 +313,10 @@ class _StudentDashboardState extends State<StudentDashboard> {
                 children: [
                   UIHelper.customButton(
                     onPressed: () async {
-                      await markAttendance(context);
+                      bool check = await Authservice().authenticatelocally();
+                      if (check) {
+                        await markAttendance(context);
+                      }
                     },
                     width: 240,
                     icon: Icons.check_circle,
@@ -275,25 +327,26 @@ class _StudentDashboardState extends State<StudentDashboard> {
                   UIHelper.customButton(
                     onPressed: () {
                       Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                              builder: (context) =>
-                                  CheckStatusLeave(uid: _auth.currentUser!.uid)));
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => CoursesScreen(),
+                        ),
+                      );
                     },
                     width: 240,
-                    icon: Icons.fact_check,
-                    text: "Check Leave Status",
+                    icon: Icons.golf_course_sharp,
+                    text: "Courses",
                   ),
                   const SizedBox(height: 20),
                   UIHelper.customButton(
                     onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) =>
-                              MarkLeaveScreen(userId: _auth.currentUser!.uid),
-                        ),
-                      );
+                      // Navigator.push(
+                      //   context,
+                      //   MaterialPageRoute(
+                      //     builder: (context) =>
+                      //         MarkLeaveScreen(userId: _auth.currentUser!.uid),
+                      //   ),
+                      // );
                     },
                     width: 240,
                     icon: Icons.leave_bags_at_home,
@@ -302,10 +355,10 @@ class _StudentDashboardState extends State<StudentDashboard> {
                   const SizedBox(height: 20),
                   UIHelper.customButton(
                     onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (context) => ViewAttendance()),
-                      );
+                      // Navigator.push(
+                      //   context,
+                      //   MaterialPageRoute(builder: (context) => ViewAttendance()),
+                      // );
                     },
                     width: 240,
                     icon: Icons.history,
@@ -316,7 +369,9 @@ class _StudentDashboardState extends State<StudentDashboard> {
                     onPressed: () {
                       Navigator.push(
                         context,
-                        MaterialPageRoute(builder: (context) => EditProfile()),
+                        MaterialPageRoute(
+                          builder: (context) => EditProfilefaculty(),
+                        ),
                       );
                     },
                     width: 240,

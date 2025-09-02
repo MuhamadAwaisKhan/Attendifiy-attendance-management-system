@@ -1,9 +1,10 @@
 // lib/screens/login_screen.dart
 import 'package:attendencesystem/Provider/authprovider.dart';
 import 'package:attendencesystem/UIHelper/customwidgets.dart';
-import 'package:attendencesystem/signupscreen.dart';
+import 'package:attendencesystem/student/signupscreen.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:lottie/lottie.dart';
 import 'package:provider/provider.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -28,7 +29,7 @@ class _LoginScreenState extends State<LoginScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          'Login',
+          'Student Login',
           style: GoogleFonts.poppins(
             fontSize: 20,
             fontWeight: FontWeight.bold,
@@ -47,7 +48,12 @@ class _LoginScreenState extends State<LoginScreen> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                SizedBox(height: 80,),
+                Lottie.asset(
+                  'assets/login.json',
+                  height: 200,
+                  fit: BoxFit.cover,
+                ),
+                SizedBox(height: 20,),
                 UIHelper.customTextField(
                   controller: _emailController,
                   label: "Email",

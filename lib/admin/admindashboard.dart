@@ -8,7 +8,7 @@ import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../Provider/authprovider.dart';
-import '../loginpage.dart';
+import '../student/loginpage.dart';
 import 'leaveapprovalscreenadmin.dart';
 
 class AdminDashboard extends StatelessWidget {

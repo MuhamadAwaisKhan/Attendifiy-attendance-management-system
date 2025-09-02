@@ -1,5 +1,7 @@
 import 'package:attendencesystem/Provider/authprovider.dart';
-import 'package:attendencesystem/service/notificationservice.dart';
+import 'package:attendencesystem/consolepage.dart';
+import 'package:attendencesystem/practice.dart';
+import 'package:attendencesystem/student/loginpage.dart';
 import 'package:attendencesystem/splashscreen.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
@@ -17,7 +19,6 @@ void main() async {
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
-
   @override
   Widget build(BuildContext context) {
     return MultiProvider(
@@ -29,7 +30,7 @@ class MyApp extends StatelessWidget {
         theme: ThemeData(
           primarySwatch: Colors.blue,
         ),
-        home: const SplashScreen(),
+        home: SplashScreen(),
         debugShowCheckedModeBanner: false,
       ),
     );

@@ -2,11 +2,11 @@ import 'dart:async';
 
 import 'package:animated_text_kit/animated_text_kit.dart';
 import 'package:attendencesystem/admin/admindashboard.dart';
-import 'package:attendencesystem/loginpage.dart';
+import 'package:attendencesystem/consolepage.dart';
+import 'package:attendencesystem/faculty/facultydashboard.dart';
+import 'package:attendencesystem/student/loginpage.dart';
 import 'package:attendencesystem/student/stdhomescreen.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -37,55 +37,51 @@ class _SplashScreenState extends State<SplashScreen>
     final isFirstTime = prefs.getBool('isFirstTime') ?? true;
 
     // Set timer: 9s first time, 4s otherwise
-    int splashDuration = isFirstTime ? 9 : 3;
+    int splashDuration = isFirstTime ? 4 : 3;
 
     // After first time, set isFirstTime = false
     if (isFirstTime) {
       await prefs.setBool('isFirstTime', false);
     }
 
-    Timer(Duration(seconds: splashDuration), () => checkLogin());
+    Timer(Duration(seconds: splashDuration), () { checkLogin();
+    });
   }
-
+//? By Shared Preferences
   Future<void> checkLogin() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     bool userlogin = prefs.getBool("isLoggedIn") ?? false;
     String? userrole = prefs.getString("role");
 
-
-    // Add a small delay to ensure context is available
-    await Future.delayed(Duration(milliseconds: 100));
-
-    if (userlogin !=  null) {
-      // Navigate to the appropriate dashboard based on role
-      if (userlogin) {
-        if(userrole=='student'){
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (context) => StudentDashboard()),
-          );
-        }else if(userrole=='admin'){
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (context) => AdminDashboard()),
-          );
-        }
-
-      } else {
+    if (userlogin) {
+      // If logged in, go to respective dashboard
+      if (userrole == 'student') {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => StudentDashboard()),
+        );
+      }
+      else  if (userrole == 'faculty') {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => facultydashboard()),
+        );
+      }
+      else {
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (context) => AdminDashboard()),
         );
       }
     } else {
+      // If not logged in, go to login screen
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (context) => LoginScreen()),
+        MaterialPageRoute(builder: (context) => consolepage()),
       );
     }
   }
-
-
+     //? By Firebase Auth
   // Future<void> _checkUserRole() async {
   //   final auth = FirebaseAuth.instance;
   //   final user = auth.currentUser;

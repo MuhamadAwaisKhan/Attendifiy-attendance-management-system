@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 
-import 'UIHelper/customwidgets.dart';
+import '../UIHelper/customwidgets.dart';
 import 'loginpage.dart';
 
 class SignupScreen extends StatefulWidget {

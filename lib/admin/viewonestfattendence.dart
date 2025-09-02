@@ -259,6 +259,7 @@ SizedBox(
                           setState(() {
                             _singleDate = null;
                             _selectedDateRange = null;
+
                           });
                         },
                       )
@@ -276,7 +277,8 @@ SizedBox(
             child: StreamBuilder<QuerySnapshot>(
               stream: getAttendance(), // your query stream
               builder: (context, snapshot) {
-                if (!snapshot.hasData) return Center(child: CircularProgressIndicator());
+                if (!snapshot.hasData)
+                  return Center(child: CircularProgressIndicator());
 
                 final docs = snapshot.data!.docs;
 
@@ -331,6 +333,7 @@ SizedBox(
                             Text("Time: $formattedTime"),
                           ],
                         ),
+                        
                         trailing: SizedBox(
                           width: 96, // enough for two icons
                           child: Row(
@@ -464,7 +467,7 @@ SizedBox(
                             color: Colors.grey
                           ),),
                           isExpanded: true,
-                          items: ['Present', 'Absent', 'Approved Leave']
+                          items: ['Present', 'Absent',]
                               .map((status) => DropdownMenuItem(
                             value: status,
                             child: Text(status),
