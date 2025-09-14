@@ -24,7 +24,7 @@ class _ViewAttendanceState extends State<ViewAttendance> {
     Query query = FirebaseFirestore.instance
         .collection('attendance')
         .where('userId', isEqualTo: user.uid)
-        .orderBy('date', descending: true);
+        .orderBy('date', descending: false);
 
     // Apply status filter
     if (_selectedFilter != 'All') {

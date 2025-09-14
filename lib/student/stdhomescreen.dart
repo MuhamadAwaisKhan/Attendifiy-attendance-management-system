@@ -1,3 +1,6 @@
+
+import 'dart:async';
+
 import 'package:attendencesystem/UIHelper/customwidgets.dart';
 import 'package:attendencesystem/student/leaveuserscreen.dart';
 import 'package:attendencesystem/student/viewattendence.dart';
@@ -8,6 +11,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../service/notificationservice.dart';
 import 'loginpage.dart';
 import 'checkleaveuserscreen.dart';
 import 'editprofile.dart';
@@ -21,13 +25,92 @@ class StudentDashboard extends StatefulWidget {
 
 class _StudentDashboardState extends State<StudentDashboard> {
   final _auth = FirebaseAuth.instance;
-  String? selectedRole; // Changed to nullable String
-  String? lastAttendanceStatus; // Added this variable
+  String? selectedRole;
+  String? lastAttendanceStatus;
   bool isloading = false;
+  StreamSubscription<QuerySnapshot>? _leaveSubscription;
+  Set<String> _processedLeaveIds = {};
 
-  /// ✅ Show Attendance Options
+  @override
+  void initState() {
+    super.initState();
+    _initializeNotifications();
+  }
+
+  @override
+  void dispose() {
+    _leaveSubscription?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _initializeNotifications() async {
+    try {
+      await NotificationService.initNotification();
+      _setupStudentLeaveListener();
+      print("✅ Notification system initialized");
+    } catch (e) {
+      print("❌ Error initializing notifications: $e");
+    }
+  }
+
+  Future<void> _setupStudentLeaveListener() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      print("❌ No user logged in");
+      return;
+    }
+
+    print("👂 Setting up leave listener for user: ${user.uid}");
+
+    _leaveSubscription?.cancel();
+
+    _leaveSubscription = FirebaseFirestore.instance
+        .collection('leave_requests')
+        .where('userId', isEqualTo: user.uid)
+        .where('status', whereIn: ['approved', 'rejected']) // only final decisions
+        .where('notified', isEqualTo: false) // only unseen
+        .snapshots()
+        .listen((snapshot) async {
+      print("📊 Received ${snapshot.docChanges.length} document changes");
+
+      for (var change in snapshot.docChanges) {
+        final data = change.doc.data() as Map<String, dynamic>?;
+        if (data == null) continue;
+
+        final leaveId = change.doc.id;
+        final status = (data['status'] ?? 'pending').toString().toLowerCase();
+
+        String dateStr = "unknown date";
+        if (data['date'] != null && data['date'] is Timestamp) {
+          final leaveDate = (data['date'] as Timestamp).toDate();
+          dateStr = DateFormat('dd-MM-yyyy').format(leaveDate);
+        }
+
+        // Show notification
+        if (status == 'approved') {
+          await NotificationService.showNotification(
+            "Leave Approved",
+            "Your leave for $dateStr was approved ✅",
+          );
+        } else if (status == 'rejected') {
+          await NotificationService.showNotification(
+            "Leave Rejected",
+            "Your leave for $dateStr was rejected ❌",
+          );
+        }
+
+        // 🔹 Mark as notified so it won't show again
+        await FirebaseFirestore.instance
+            .collection('leave_requests')
+            .doc(leaveId)
+            .update({'notified': true});
+      }
+    }, onError: (error) {
+      print("❌ Error in leave listener: $error");
+    });
+  }
   Future<String?> showOptionBox(BuildContext context) async {
-    String? dialogSelectedRole; // Local variable for the dialog
+    String? dialogSelectedRole;
 
     final result = await showDialog<String>(
       context: context,
@@ -152,13 +235,15 @@ class _StudentDashboardState extends State<StudentDashboard> {
           .get();
 
       if (markRef.docs.isNotEmpty) {
-        // 👇 Already marked, don't show dialog
         UIHelper.customalertbox(
           context,
           "You have already marked attendance today!",
         );
+        await NotificationService.showNotification(
+          "Attendance Already Marked",
+          "You already marked your attendance today.",
+        );
       } else {
-        // 👇 Not marked yet → show options
         final value = await showOptionBox(context);
         if (value != null && value.isNotEmpty) {
           setState(() {
@@ -166,7 +251,6 @@ class _StudentDashboardState extends State<StudentDashboard> {
           });
 
           try {
-            // Add new document to Firestore
             await firestore.collection('attendance').add({
               'userId': uid,
               "date": date,
@@ -179,6 +263,10 @@ class _StudentDashboardState extends State<StudentDashboard> {
               lastAttendanceStatus = value;
             });
 
+            await NotificationService.showNotification(
+              "Attendance Marked",
+              "You marked attendance as $value",
+            );
             UIHelper.customalertbox(context, "Attendance marked as $value ✅");
           } catch (e) {
             setState(() {
@@ -234,7 +322,6 @@ class _StudentDashboardState extends State<StudentDashboard> {
           },
         );
 
-        // Return true if user confirmed exit, false otherwise
         return shouldExit ?? false;
       },
       child: Scaffold(
@@ -253,11 +340,6 @@ class _StudentDashboardState extends State<StudentDashboard> {
         ),
         body: Stack(
           children: [
-            // StudentNotificationListener(), // 👈 This listens for notifications
-            // if (isloading)
-            //   const Center(
-            //     child: CircularProgressIndicator(),
-            //   ),
             Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -269,7 +351,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
                     width: 240,
                     icon: Icons.check_circle,
                     text: "Mark Attendance",
-                    isLoading: isloading, // Pass loading state to button
+                    isLoading: isloading,
                   ),
                   const SizedBox(height: 20),
                   UIHelper.customButton(

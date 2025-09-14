@@ -45,6 +45,8 @@ class AuthProvider with ChangeNotifier {
     String password,
     String name,
     String regno,
+    String departmentname,
+    String instituationname,
   ) async {
     if (pickedimage == null) {
       UIHelper.customalertbox(
@@ -89,6 +91,8 @@ class AuthProvider with ChangeNotifier {
         "name": name,
         "email": email,
         "role": "student",
+        "departmentname": departmentname,
+        "instituationname": instituationname,
         "createdAt": FieldValue.serverTimestamp(),
       });
 
@@ -98,8 +102,7 @@ class AuthProvider with ChangeNotifier {
       // Clear controllers
 
       UIHelper.customalertbox(context, "Registration successful");
-    }
-    on FirebaseAuthException catch (e) {
+    } on FirebaseAuthException catch (e) {
       String errorMessage = "Registration failed";
       if (e.code == 'weak-password') {
         errorMessage = "The password provided is too weak.";
@@ -113,13 +116,16 @@ class AuthProvider with ChangeNotifier {
       UIHelper.customalertbox(context, errorMessage);
     }
   }
+
   Future<void> signUpfaculty(
-      BuildContext context,
-      String email,
-      String password,
-      String name,
-      String position,
-      ) async {
+    BuildContext context,
+    String email,
+    String password,
+    String name,
+    String position,
+    String instituationname,
+      String departmentname,
+  ) async {
     // Show loading dialog
     showDialog(
       context: context,
@@ -143,10 +149,11 @@ class AuthProvider with ChangeNotifier {
 
     try {
       // Create user in Firebase Auth
-      UserCredential userCredential = await _auth.createUserWithEmailAndPassword(
-        email: email.trim(),
-        password: password,
-      );
+      UserCredential userCredential = await _auth
+          .createUserWithEmailAndPassword(
+            email: email.trim(),
+            password: password,
+          );
 
       // Get user from userCredential
       User? user = userCredential.user;
@@ -159,6 +166,8 @@ class AuthProvider with ChangeNotifier {
         "name": name,
         "email": email,
         "role": "faculty",
+        "departmentname": departmentname,
+        "instituationname": instituationname,
         "createdAt": FieldValue.serverTimestamp(),
       });
 
@@ -181,9 +190,7 @@ class AuthProvider with ChangeNotifier {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(
-            builder: (_) => EmailVerificationScreen(),
-          ),
+          MaterialPageRoute(builder: (_) => EmailVerificationScreen()),
         );
       });
     } on FirebaseAuthException catch (e) {
@@ -230,6 +237,7 @@ class AuthProvider with ChangeNotifier {
       debugPrint("Error uploading image: $e");
     }
   }
+
   Future<void> uploaddatafaculty(String uid) async {
     try {
       // Upload image to Firebase Storage
@@ -348,6 +356,8 @@ class AuthProvider with ChangeNotifier {
 
         await prefs.setBool("isLoggedIn", true);
         await prefs.setString("role", role);
+        await prefs.setString("side", "student"); // ✅ track login side
+
 
         UIHelper.customalertbox(context, "Login successful");
 
@@ -373,6 +383,7 @@ class AuthProvider with ChangeNotifier {
 
         await prefs.setBool("isLoggedIn", true);
         await prefs.setString("role", 'admin');
+        await prefs.setString("side", "student"); // ✅ admin logged in from student side
 
         UIHelper.customalertbox(context, "Welcome Admin");
         Navigator.pushReplacement(
@@ -415,7 +426,8 @@ class AuthProvider with ChangeNotifier {
       UIHelper.customalertbox(context, "Unexpected error: $e");
     }
   }
-Future<void> loginfaculty(
+
+  Future<void> loginfaculty(
     BuildContext context,
     String email,
     String password,
@@ -453,13 +465,13 @@ Future<void> loginfaculty(
         return;
       }
 
-// Fetch user document
+      // Fetch user document
       DocumentSnapshot doc = await firestore
           .collection('faculty')
           .doc(user.uid)
           .get();
 
-// Close loading dialog safely
+      // Close loading dialog safely
       if (Navigator.canPop(context)) Navigator.pop(context);
 
       SharedPreferences prefs = await SharedPreferences.getInstance();
@@ -470,21 +482,20 @@ Future<void> loginfaculty(
 
         await prefs.setBool("isLoggedIn", true);
         await prefs.setString("role", role);
-
+        await prefs.setString("side", "faculty"); // ✅ track login side
         UIHelper.customalertbox(context, "Login successful");
 
         // ✅ Safe null check before using emailVerified
         if (!user.emailVerified) {
           await user.sendEmailVerification();
           Fluttertoast.showToast(
-              msg: "Your email is not verified. Please verify your email.");
+            msg: "Your email is not verified. Please verify your email.",
+          );
 
           // Navigate to EmailVerificationScreen
           Navigator.pushReplacement(
             context,
-            MaterialPageRoute(
-              builder: (_) => EmailVerificationScreen(),
-            ),
+            MaterialPageRoute(builder: (_) => EmailVerificationScreen()),
           );
         } else {
           // Email already verified → Go to dashboard directly
@@ -510,6 +521,7 @@ Future<void> loginfaculty(
 
         await prefs.setBool("isLoggedIn", true);
         await prefs.setString("role", 'admin');
+        await prefs.setString("side", "faculty"); // ✅ admin logged in from faculty side
 
         UIHelper.customalertbox(context, "Welcome Admin");
         Navigator.pushReplacement(
@@ -523,7 +535,6 @@ Future<void> loginfaculty(
           "Account not properly set up. Contact admin.",
         );
       }
-
     } on FirebaseAuthException catch (e) {
       if (Navigator.canPop(context)) Navigator.pop(context);
 
@@ -558,6 +569,7 @@ Future<void> loginfaculty(
     List<String> manualAdminEmails = ['awais@admin.com', 'admin2@example.com'];
     return manualAdminEmails.contains(email);
   }
+
   //   Future<void> logout(BuildContext context) async {
   //     try {
   //       await _auth.signOut();
@@ -592,6 +604,7 @@ Future<void> loginfaculty(
     // Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => LoginScreen()));
     notifyListeners();
   }
+
   // Future<void> logoutforadmin(BuildContext context) async {
   //   await _auth.signOut();
   //     Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => LoginScreen()));

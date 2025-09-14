@@ -23,6 +23,8 @@ class _SignupScreenfacultyState extends State<SignupScreenfaculty> {
   final _passwordController = TextEditingController();
   final _nameController = TextEditingController();
   final _postionController = TextEditingController();
+  final _instituationnameController = TextEditingController();
+  final _departmentnameController = TextEditingController();
   final formkey = GlobalKey<FormState>();
   late String _captchaCode;
   late Color _captchaColor;
@@ -135,17 +137,6 @@ class _SignupScreenfacultyState extends State<SignupScreenfaculty> {
                   },
                 ),
                 UIHelper.customTextField(
-                  controller: _postionController,
-                  label: "Position",
-                  hintText: 'e.g: lecture,Associate Professor, etc.',
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Please enter your position status';
-                    }
-                    return null;
-                  },
-                ),
-                UIHelper.customTextField(
                   controller: _emailController,
                   label: "Email",
                   validator: (value) {
@@ -155,6 +146,39 @@ class _SignupScreenfacultyState extends State<SignupScreenfaculty> {
                     return null;
                   },
                 ),
+                UIHelper.customTextField(
+                  controller: _postionController,
+                  label: "Position",
+                  hintText: 'e.g: lecture,Associate Professor, etc.',
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Please enter your position status';
+                    }
+                    return null;
+                  },
+                ), UIHelper.customTextField(
+                  controller: _departmentnameController,
+                  label: "Department Name",
+                  hintText: 'e.g: Computer Science,Civil,Management etc.',
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Please enter your position status';
+                    }
+                    return null;
+                  },
+                ),
+                UIHelper.customTextField(
+                  controller: _instituationnameController,
+                  label: "Institution Name",
+                  hintText: 'e.g: Complete Name of the institution, etc.',
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Please enter your position status';
+                    }
+                    return null;
+                  },
+                ),
+
                 UIHelper.customTextField(
                   controller: _passwordController,
                   label: "Password",
@@ -213,6 +237,8 @@ class _SignupScreenfacultyState extends State<SignupScreenfaculty> {
                           _passwordController.text,
                           _nameController.text,
                           _postionController.text,
+                          _instituationnameController.text,
+                          _departmentnameController.text,
                         );
                       }
                     }

@@ -63,15 +63,22 @@ class _CheckStatusLeaveState extends State<CheckStatusLeave> {
       body: StreamBuilder<QuerySnapshot>(
         stream: getStatusRequests(),
         builder: (context, snapshot) {
-          if (!snapshot.hasData) {
+          if (snapshot.hasError) {
+            return Center(
+              child: Text(
+                "Error: ${snapshot.error}",
+                style: GoogleFonts.poppins(fontSize: 16),
+              ),
+            );
+          }
+
+          if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(
               child: CircularProgressIndicator(color: Colors.blue),
             );
           }
 
-          var requests = snapshot.data!.docs;
-
-          if (requests.isEmpty) {
+          if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
             return Center(
               child: Text(
                 "No leave requests found",
@@ -80,11 +87,14 @@ class _CheckStatusLeaveState extends State<CheckStatusLeave> {
             );
           }
 
+          var requests = snapshot.data!.docs;
+
           return ListView.builder(
             itemCount: requests.length,
             itemBuilder: (context, index) {
-              var requestData = requests[index];
+              var requestData = requests[index].data() as Map<String, dynamic>;
               String status = requestData['status'] ?? 'Pending';
+              String reason = requestData['reason'] ?? 'N/A';
 
               return Card(
                 margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -99,7 +109,7 @@ class _CheckStatusLeaveState extends State<CheckStatusLeave> {
                     size: 30,
                   ),
                   title: Text(
-                    "Reason: ${requestData['reason'] ?? 'N/A'}",
+                    "Reason: $reason",
                     style: GoogleFonts.poppins(
                       fontSize: 15,
                       fontWeight: FontWeight.w600,
@@ -123,21 +133,23 @@ class _CheckStatusLeaveState extends State<CheckStatusLeave> {
                         ],
                       ),
                       const SizedBox(height: 4),
-                      Row(
-                        children: [
-                          Icon(Icons.message, size: 16, color: Colors.grey[600]),
-                          const SizedBox(width: 5),
-                          Expanded(
-                            child: Text(
-                              requestData['notificationMessage'] ?? 'No message',
-                              style: GoogleFonts.poppins(fontSize: 13),
+                      // Show notificationMessage only if exists
+                      if (requestData.containsKey('notificationMessage') &&
+                          (requestData['notificationMessage'] as String).isNotEmpty)
+                        Row(
+                          children: [
+                            Icon(Icons.message, size: 16, color: Colors.grey[600]),
+                            const SizedBox(width: 5),
+                            Expanded(
+                              child: Text(
+                                requestData['notificationMessage'],
+                                style: GoogleFonts.poppins(fontSize: 13),
+                              ),
                             ),
-                          ),
-                        ],
-                      ),
+                          ],
+                        ),
                     ],
                   ),
-                  // trailing: const Icon(Icons.arrow_forward_ios, size: 18, color: Colors.grey),
                 ),
               );
             },

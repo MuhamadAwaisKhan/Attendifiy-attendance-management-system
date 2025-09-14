@@ -6,83 +6,195 @@ import 'package:intl/intl.dart';
 class LeaveApprovalScreen extends StatelessWidget {
   const LeaveApprovalScreen({super.key});
 
-  @override
-  Widget build(BuildContext context) {
-    final _firestore = FirebaseFirestore.instance;
+  FirebaseFirestore get _firestore => FirebaseFirestore.instance;
 
-    Stream<QuerySnapshot> getPendingRequests() {
-      return _firestore
-          .collection('leave_requests')
-          .where('status', isEqualTo: 'pending')
-          .orderBy('requestedAt', descending: true)
-          .snapshots();
-    }
+  /// 🔹 Stream of pending leave requests
+  Stream<QuerySnapshot> getPendingRequests() {
+    return _firestore
+        .collection('leave_requests')
+        .where('status', isEqualTo: 'pending')
+        .orderBy('requestedAt', descending: true)
+        .snapshots();
+  }
 
-    Future<void> updateLeaveStatus(String requestId, String status) async {
+  /// 🔹 Approve/Reject leave + mark attendance + store notification message
+  Future<void> updateLeaveStatus(
+      BuildContext context, String requestId, String status) async {
+    try {
       var requestDoc =
       await _firestore.collection('leave_requests').doc(requestId).get();
+      if (!requestDoc.exists) return;
+
       String userId = requestDoc['userId'];
       DateTime leaveDate = (requestDoc['date'] as Timestamp).toDate();
 
-      // Notification message
+      // Message to be stored
       String message = status == "approved"
-          ? "Your leave for ${DateFormat('dd-MM-yyyy').format(leaveDate)} has been approved."
-          : "Your leave for ${DateFormat('dd-MM-yyyy').format(leaveDate)} has been rejected.";
+          ? "✅ Your leave for ${DateFormat('dd-MM-yyyy').format(leaveDate)} has been approved."
+          : "❌ Your leave for ${DateFormat('dd-MM-yyyy').format(leaveDate)} has been rejected.";
 
       // Update leave request
-      await _firestore.collection('leave_requests').doc(requestId).update({
-        'status': status,
+      await FirebaseFirestore.instance
+          .collection('leave_requests')
+          .doc(requestId)
+          .update({
+        'status': status, // "approved" or "rejected"
         'reviewedAt': Timestamp.now(),
-        'notificationMessage': message,
+        'notificationMessage': status == "approved"
+            ? "Your leave has been approved ✅"
+            : "Your leave has been rejected ❌",
+        'notified': false, // 🔹 Important → student will listen for this
       });
 
-      // Mark Attendance
-      String attendanceStatus =
-      status == "approved" ? "Approved Leave" : "Absent";
 
+      // Mark attendance
       await _firestore.collection('attendance').add({
         'userId': userId,
         'date': DateFormat('dd-MM-yyyy').format(leaveDate),
-        'status': attendanceStatus,
+        'status': status == "approved" ? "Approved Leave" : "Absent",
         'markedAt': Timestamp.now(),
       });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text("Leave ${status.toUpperCase()} successfully"),
+          backgroundColor: status == "approved" ? Colors.green : Colors.red,
+        ),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Error: $e")),
+      );
     }
+  }
 
-    Future<Map<String, int>> getAttendanceCounts(String userId) async {
-      var snapshot = await _firestore
-          .collection('attendance')
-          .where('userId', isEqualTo: userId)
-          .get();
+  /// 🔹 Attendance counts for a student
+  Future<Map<String, int>> getAttendanceCounts(String userId) async {
+    var snapshot = await _firestore
+        .collection('attendance')
+        .where('userId', isEqualTo: userId)
+        .get();
 
-      int present = 0;
-      int absent = 0;
-      int approvedLeave = 0;
+    int present = 0, absent = 0, approvedLeave = 0;
 
-      for (var doc in snapshot.docs) {
-        String status = doc['status'];
-        if (status == "Present") {
+    for (var doc in snapshot.docs) {
+      switch (doc['status']) {
+        case "Present":
           present++;
-        } else if (status == "Absent") {
+          break;
+        case "Absent":
           absent++;
-        } else if (status == "Approved Leave") {
+          break;
+        case "Approved Leave":
           approvedLeave++;
-        }
+          break;
       }
-
-      return {
-        'present': present,
-        'absent': absent,
-        'approvedLeave': approvedLeave,
-      };
     }
 
+    return {
+      'present': present,
+      'absent': absent,
+      'approvedLeave': approvedLeave,
+    };
+  }
+
+  /// 🔹 Build card for each request
+  Widget buildRequestCard(BuildContext context, QueryDocumentSnapshot requestData,
+      Map<String, dynamic> userData, Map<String, int> counts) {
+    DateTime leaveDate = (requestData['date'] as Timestamp).toDate();
+
+    return Card(
+      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      elevation: 3,
+      child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text("Reason: ${requestData['reason']}",
+                style: GoogleFonts.poppins(
+                    fontSize: 15, fontWeight: FontWeight.w600)),
+            const SizedBox(height: 6),
+            Text("Name: ${userData['name'] ?? 'N/A'}",
+                style: GoogleFonts.poppins()),
+            Text("Reg No: ${userData['regno'] ?? 'N/A'}",
+                style: GoogleFonts.poppins()),
+            Text("Email: ${userData['email'] ?? 'N/A'}",
+                style: GoogleFonts.poppins()),
+            Text("Date: ${DateFormat('dd-MM-yyyy').format(leaveDate)}",
+                style: GoogleFonts.poppins()),
+
+            const SizedBox(height: 8),
+            Column(
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Chip(
+                      label: Text("Present: ${counts['present']}",
+                          style: GoogleFonts.poppins(color: Colors.white)),
+                      backgroundColor: Colors.green,
+                    ),
+                    const SizedBox(width: 6),
+                    Chip(
+                      label: Text("Absent: ${counts['absent']}",
+                          style: GoogleFonts.poppins(color: Colors.white)),
+                      backgroundColor: Colors.red,
+                    ),
+                    const SizedBox(width: 6),
+
+                  ],
+                ),
+                Chip(
+                  label: Text("Leaves: ${counts['approvedLeave']}",
+                      style: GoogleFonts.poppins(color: Colors.white)),
+                  backgroundColor: Colors.orange,
+                ),
+              ],
+            ),
+            const Divider(height: 20),
+
+            // 🔹 Action buttons
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                ElevatedButton.icon(
+                  style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.green,
+                      minimumSize: const Size(100, 40)),
+                  onPressed: () =>
+                      updateLeaveStatus(context, requestData.id, "approved"),
+                  icon: const Icon(Icons.check, color: Colors.white, size: 18),
+                  label: Text("Approve",
+                      style: GoogleFonts.poppins(color: Colors.white)),
+                ),
+                const SizedBox(width: 10),
+                ElevatedButton.icon(
+                  style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.red,
+                      minimumSize: const Size(100, 40)),
+                  onPressed: () =>
+                      updateLeaveStatus(context, requestData.id, "rejected"),
+                  icon: const Icon(Icons.close, color: Colors.white, size: 18),
+                  label: Text("Reject",
+                      style: GoogleFonts.poppins(color: Colors.white)),
+                ),
+              ],
+            )
+          ],
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(
-          'Approve Leaves',
-          style: GoogleFonts.poppins(
-              fontSize: 17, fontWeight: FontWeight.bold, color: Colors.white),
-        ),
+        title: Text('Approve Leaves',
+            style: GoogleFonts.poppins(
+                fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)),
         centerTitle: true,
         backgroundColor: Colors.blue,
       ),
@@ -91,15 +203,15 @@ class LeaveApprovalScreen extends StatelessWidget {
         builder: (context, snapshot) {
           if (!snapshot.hasData) {
             return const Center(
-              child: CircularProgressIndicator(color: Colors.blue),
-            );
+                child: CircularProgressIndicator(color: Colors.blue));
           }
 
           var requests = snapshot.data!.docs;
           if (requests.isEmpty) {
             return Center(
-              child: Text("No pending requests",
-                  style: GoogleFonts.poppins(fontSize: 16)),
+              child: Text("✅ No pending requests",
+                  style: GoogleFonts.poppins(
+                      fontSize: 16, fontWeight: FontWeight.w500)),
             );
           }
 
@@ -108,83 +220,25 @@ class LeaveApprovalScreen extends StatelessWidget {
             itemBuilder: (context, index) {
               var requestData = requests[index];
               String userId = requestData['userId'];
-              DateTime leaveDate =
-              (requestData['date'] as Timestamp).toDate();
 
               return FutureBuilder<DocumentSnapshot>(
                 future: _firestore.collection('users').doc(userId).get(),
                 builder: (context, userSnapshot) {
                   if (!userSnapshot.hasData) {
-                    return Card(
-                      margin: const EdgeInsets.all(8),
-                      child: ListTile(
-                          title: Text("Loading user info...",
-                              style: GoogleFonts.poppins())),
-                    );
+                    return const SizedBox.shrink();
                   }
 
                   var userData =
-                  userSnapshot.data!.data() as Map<String, dynamic>?;
+                      userSnapshot.data!.data() as Map<String, dynamic>? ?? {};
 
                   return FutureBuilder<Map<String, int>>(
                     future: getAttendanceCounts(userId),
                     builder: (context, attendanceSnapshot) {
-                      var counts = attendanceSnapshot.data ?? {
-                        'present': 0,
-                        'absent': 0,
-                        'approvedLeave': 0
-                      };
-
-                      return Card(
-                        margin: const EdgeInsets.all(8),
-                        child: ListTile(
-                          title: Text("Reason: ${requestData['reason']}",
-                              style: GoogleFonts.poppins(
-                                  fontSize: 15, fontWeight: FontWeight.w500)),
-                          subtitle: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text("Name: ${userData?['name'] ?? 'N/A'}",
-                                  style: GoogleFonts.poppins()),
-                              Text("Reg No: ${userData?['regno'] ?? 'N/A'}",
-                                  style: GoogleFonts.poppins()),
-                              Text("Email: ${userData?['email'] ?? 'N/A'}",
-                                  style: GoogleFonts.poppins()),
-                              Text(
-                                  "Date: ${DateFormat('dd-MM-yyyy').format(leaveDate)}",
-                                  style: GoogleFonts.poppins()),
-
-                              // Show counts here
-                              const SizedBox(height: 4),
-                              Text("Present: ${counts['present']}",
-                                  style: GoogleFonts.poppins(
-                                      color: Colors.green)),
-                              Text("Absent: ${counts['absent']}",
-                                  style: GoogleFonts.poppins(
-                                      color: Colors.red)),
-                              Text("Approved Leaves: ${counts['approvedLeave']}",
-                                  style: GoogleFonts.poppins(
-                                      color: Colors.orange)),
-                            ],
-                          ),
-                          trailing: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              IconButton(
-                                icon:
-                                const Icon(Icons.check, color: Colors.green),
-                                onPressed: () => updateLeaveStatus(
-                                    requestData.id, "approved"),
-                              ),
-                              IconButton(
-                                icon: const Icon(Icons.close, color: Colors.red),
-                                onPressed: () => updateLeaveStatus(
-                                    requestData.id, "rejected"),
-                              ),
-                            ],
-                          ),
-                        ),
-                      );
+                      if (!attendanceSnapshot.hasData) {
+                        return const SizedBox.shrink();
+                      }
+                      return buildRequestCard(
+                          context, requestData, userData, attendanceSnapshot.data!);
                     },
                   );
                 },

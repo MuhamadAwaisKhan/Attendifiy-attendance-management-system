@@ -266,7 +266,7 @@ class _viewallstdattendanceadminState extends State<viewallstdattendanceadmin> {
                         child: Text(
                           _selectedDateRange == null
                               ? "Calender"
-                              : "${DateFormat('yyyy-MM-dd').format(_selectedDateRange!.start)} → ${DateFormat('yyyy-MM-dd').format(_selectedDateRange!.end)}",
+                              : "${DateFormat('dd-MM-yyyy').format(_selectedDateRange!.start)} → ${DateFormat('yyyy-MM-dd').format(_selectedDateRange!.end)}",
                           style: TextStyle(color: Colors.white),
                         ),
                       ),
@@ -372,6 +372,7 @@ class PDFPreviewScreen extends StatelessWidget {
         title: Text('PDF Preview', style: GoogleFonts.poppins(fontWeight: FontWeight.bold, fontSize: 18, color: Colors.white)),
         backgroundColor: Colors.blue,
         centerTitle: true,
+
       ),
       body: PdfPreview(
         loadingWidget: CircularProgressIndicator(color: Colors.blue,),
@@ -386,7 +387,9 @@ class PDFPreviewScreen extends StatelessWidget {
             return await doc.save();
           } catch (e) {
             ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error generating PDF: $e')));
+
             return Uint8List(0);
+
           }
         },
       ),

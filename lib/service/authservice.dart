@@ -10,13 +10,12 @@ class Authservice{
     try{
       isAuthenticated=await localauth.authenticate(localizedReason: "We are trying to authenticate you",
       options: AuthenticationOptions(
-        biometricOnly: true,
+        // biometricOnly: true,
+        sensitiveTransaction:true,
         stickyAuth: true,
         useErrorDialogs: true,
-      )
-
+      ),
       );
-
     }
     on PlatformException catch (e) {
       if (e.code == auth_error.notEnrolled) {

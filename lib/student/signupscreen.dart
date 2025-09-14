@@ -4,7 +4,6 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
-
 import '../UIHelper/customwidgets.dart';
 import 'loginpage.dart';
 
@@ -19,7 +18,9 @@ class _SignupScreenState extends State<SignupScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _nameController = TextEditingController();
+  final _departController = TextEditingController();
   final _regnoController = TextEditingController();
+  final _instituationnameController = TextEditingController();
   final formkey = GlobalKey<FormState>();
 
   @override
@@ -52,41 +53,51 @@ class _SignupScreenState extends State<SignupScreen> {
                   },
                   child: context.watch<AuthProvider>().pickedimage != null
                       ? CircleAvatar(
-                    radius: 80,
-                    backgroundImage: FileImage( context.watch<AuthProvider>().pickedimage!),
-                  )
+                          radius: 80,
+                          backgroundImage: FileImage(
+                            context.watch<AuthProvider>().pickedimage!,
+                          ),
+                        )
                       : Stack(
-                        children:[ CircleAvatar(
-                                            backgroundColor: Colors.blue,
-                                            radius: 80,
-                                            child: Icon(
-                        color: Colors.white,
-                        CupertinoIcons.person,
-                        size: 60,
-                                            ),
-                                          ),
-                          Positioned(
-                            bottom: 5,
-                            right: 5,
-                            child: GestureDetector(
-                              onTap: () {
-                                context.read<AuthProvider>().showoptionbox(context);                              },
-                              child: Container(
-                                padding: EdgeInsets.all(8),
-                                decoration: BoxDecoration(
-                                  color: Colors.blue.withOpacity(0.8),
-                                  shape: BoxShape.circle,
-                                  border: Border.all(color: Colors.white, width: 2),
-                                ),
-                                child: Icon(
-                                  Icons.camera_alt,
-                                  color: Colors.white,
-                                  size: 20,
+                          children: [
+                            CircleAvatar(
+                              backgroundColor: Colors.blue,
+                              radius: 80,
+                              child: Icon(
+                                color: Colors.white,
+                                CupertinoIcons.person,
+                                size: 60,
+                              ),
+                            ),
+                            Positioned(
+                              bottom: 5,
+                              right: 5,
+                              child: GestureDetector(
+                                onTap: () {
+                                  context.read<AuthProvider>().showoptionbox(
+                                    context,
+                                  );
+                                },
+                                child: Container(
+                                  padding: EdgeInsets.all(8),
+                                  decoration: BoxDecoration(
+                                    color: Colors.blue.withOpacity(0.8),
+                                    shape: BoxShape.circle,
+                                    border: Border.all(
+                                      color: Colors.white,
+                                      width: 2,
+                                    ),
+                                  ),
+                                  child: Icon(
+                                    Icons.camera_alt,
+                                    color: Colors.white,
+                                    size: 20,
+                                  ),
                                 ),
                               ),
                             ),
-                          ),
-                        ]),
+                          ],
+                        ),
                 ),
                 UIHelper.customTextField(
                   controller: _nameController,
@@ -119,6 +130,28 @@ class _SignupScreenState extends State<SignupScreen> {
                   },
                 ),
                 UIHelper.customTextField(
+                  controller: _departController,
+                  label: "Department Name",
+                  hintText: "SE,CS,MS etc.",
+                  validator: (value) {
+                    if (value!.isEmpty) {
+                      return 'Please enter your department name';
+                    }
+                    return null;
+                  },
+                ),
+                UIHelper.customTextField(
+                  controller: _instituationnameController,
+                  label: "Institution Name",
+                  hintText: 'Complete Name',
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Please enter your position status';
+                    }
+                    return null;
+                  },
+                ),
+                UIHelper.customTextField(
                   controller: _passwordController,
                   label: "Password",
                   obscureText: true,
@@ -138,12 +171,13 @@ class _SignupScreenState extends State<SignupScreen> {
                         _emailController.text,
                         _passwordController.text,
                         _nameController.text,
+                        _departController.text,
                         _regnoController.text,
+                        _instituationnameController.text,
                       );
                     }
                   },
                   width: 280,
-
                   text: "Sign Up",
                   icon: (Icons.logout),
                 ),
